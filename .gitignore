@@ -1,0 +1,31 @@
+# Environment — NEVER commit this
+.env
+
+# Database (contains user data)
+phishnet.db
+*.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# JARVIS trained model
+jarvis_brain.pkl
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

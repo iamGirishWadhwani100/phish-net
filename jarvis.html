@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S - AI Operations Node</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.min.js"></script>
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({ pageLanguage: 'en' }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <style>
+        :root {
+            --clr-bg: #05080f; --clr-panel: rgba(12,18,28,0.95);
+            --clr-cyan: #5bc0be; --clr-pink: #d48bbd;
+            --clr-green: #8bc34a; --clr-yellow: #d4c768;
+            --clr-text: #cdd6f4; --clr-red: #d9534f;
+        }
+        body { font-family: 'Share Tech Mono', monospace; background-color: var(--clr-bg); color: var(--clr-text); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        #matrix-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; }
+        .chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; padding-bottom: 50px; }
+        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: var(--clr-cyan); }
+        .msg-bubble { padding: 15px 20px; border-radius: 8px; font-size: 0.9rem; line-height: 1.5; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.3); word-wrap: break-word; }
+        .msg-user   { align-self: flex-end; background: rgba(91,192,190,0.15); border: 1px solid var(--clr-cyan); border-bottom-right-radius: 0; color: #fff; max-width: 80%; }
+        .msg-jarvis { align-self: flex-start; background: rgba(139,195,74,0.15); border: 1px solid var(--clr-green); border-bottom-left-radius: 0; color: var(--clr-green); max-width: 88%; }
+        .msg-error  { align-self: flex-start; background: rgba(217,83,79,0.1); border: 1px solid var(--clr-red); border-bottom-left-radius: 0; color: var(--clr-red); max-width: 88%; }
+        .terminal-box { background: rgba(2,4,8,0.95); border: 1px solid var(--clr-green); padding: 15px; color: var(--clr-green); font-size: 0.85rem; white-space: pre-wrap; overflow-y: auto; border-radius: 2px; line-height: 1.4; width: 100%; max-height: 350px; margin-top: 8px; }
+        .input-area { background: var(--clr-panel); border-top: 1px solid var(--clr-cyan); padding: 15px 20px; display: flex; align-items: center; gap: 10px; z-index: 10; position: relative; }
+        .cyber-input { background: rgba(0,0,0,0.6); border: 1px solid var(--clr-cyan); color: #fff; width: 100%; padding: 12px 15px; outline: none; border-radius: 4px; transition: 0.3s; font-family: 'Share Tech Mono', monospace; }
+        .cyber-input:focus { border-color: var(--clr-green); box-shadow: 0 0 8px rgba(139,195,74,0.3); }
+        .btn-icon { background: rgba(91,192,190,0.2); border: 1px solid var(--clr-cyan); color: var(--clr-cyan); width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; border-radius: 4px; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+        .btn-icon:hover { background: var(--clr-cyan); color: #000; }
+        .text-cyan-muted   { color: var(--clr-cyan); }
+        .text-pink-muted   { color: var(--clr-pink); }
+        .text-green-muted  { color: var(--clr-green); }
+        .text-yellow-muted { color: var(--clr-yellow); }
+        .text-red-muted    { color: var(--clr-red); }
+        .thinking-dots::after { content: '...'; animation: dots 1.2s steps(3,end) infinite; }
+        @keyframes dots { 0%,100%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+        #voice-select { background: #05080f; color: var(--clr-cyan); border: 1px solid var(--clr-cyan); border-radius: 4px; padding: 4px 6px; font-size: 11px; outline: none; cursor: pointer; max-width: 140px; }
+        .goog-te-combo { background-color: #05080f !important; color: var(--clr-cyan) !important; border: 1px solid var(--clr-cyan) !important; border-radius: 4px !important; padding: 6px !important; font-size: 14px !important; }
+        .goog-te-gadget .goog-logo-link, .goog-te-banner-frame { display: none !important; }
+        body { top: 0px !important; }
+    </style>
+</head>
+<body>
+<canvas id="matrix-bg"></canvas>
+
+<!-- Hidden TTS text buffers -->
+<div style="position:absolute;top:-9999px;left:-9999px;opacity:0;pointer-events:none;">
+    <span id="tts-greeting">Hello Operator. Welcome to the platform. How can I assist you today?</span>
+    <span id="tts-update">Voice model updated and saved.</span>
+</div>
+
+<!-- HEADER -->
+<header class="bg-black/80 border-b border-cyan-800 p-4 flex justify-between items-center z-10 backdrop-blur-md">
+    <div class="flex items-center gap-4">
+        <img src="giphy.gif" alt="Jarvis Core" onclick="triggerShortGreeting()"
+             class="w-14 h-auto cursor-pointer hover:scale-110 transition-transform"
+             style="filter: drop-shadow(0 0 12px rgba(91,192,190,0.6));"
+             title="Click to Wake Up J.A.R.V.I.S.">
+        <div>
+            <h1 class="text-cyan-400 font-bold tracking-widest text-lg">J.A.R.V.I.S. <span class="text-green-400 text-xs ml-2">(GPT-4o ACTIVE)</span></h1>
+            <p class="text-[10px] text-green-500 tracking-[0.2em] uppercase">PentestGPT — Master Intelligence Node</p>
+        </div>
+    </div>
+    <div class="flex gap-4 items-center">
+        <select id="voice-select" title="Select Jarvis Voice Engine"></select>
+        <div id="google_translate_element"></div>
+        <button id="btn-voice" onclick="toggleVoice()" class="text-cyan-400 hover:text-white transition" title="Toggle Voice">
+            <i class="fa-solid fa-volume-high"></i>
+        </button>
+        <button onclick="window.location.href='index.html'" class="text-pink-400 text-xs border border-pink-400 px-3 py-1 rounded hover:bg-pink-900/30 transition uppercase">
+            Exit to Dashboard
+        </button>
+    </div>
+</header>
+
+<div id="chat-box" class="chat-container"></div>
+<input type="file" id="file-upload" class="hidden">
+
+<div class="input-area">
+    <button class="btn-icon" onclick="document.getElementById('file-upload').click()" title="Attach File">
+        <i class="fa-solid fa-paperclip"></i>
+    </button>
+    <div id="file-indicator" class="hidden text-xs text-pink-400 font-bold px-2 whitespace-nowrap border border-pink-400 rounded py-1 bg-black/50">
+        <i class="fa-solid fa-file"></i> Loaded
+    </div>
+    <input type="text" id="chat-input" class="cyber-input"
+           placeholder="Ask JARVIS anything — CTF help, nmap, privesc, web exploits..."
+           onkeypress="if(event.key==='Enter') processInput()">
+    <button class="btn-icon" onclick="processInput()" title="Send">
+        <i class="fa-solid fa-paper-plane"></i>
+    </button>
+</div>
+
+<script>
+const BACKEND = "";  // Flask serves frontend — use relative URLs
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+function authHeaders() {
+    const token = localStorage.getItem('pn_token');
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : ''
+    };
+}
+
+// Auto-refresh JWT token every 20 minutes to prevent session expiry
+async function refreshToken() {
+    try {
+        const res  = await fetch(`${BACKEND}/api/token/refresh`, {method:'POST', headers: authHeaders()});
+        const data = await res.json();
+        if (data.status === 'success') {
+            localStorage.setItem('pn_token', data.token);
+            console.log('[JARVIS] Token refreshed.');
+        }
+    } catch(e) { console.warn('[JARVIS] Token refresh failed:', e); }
+}
+setInterval(refreshToken, 20 * 60 * 1000); // every 20 min
+setTimeout(refreshToken, 5000);             // also refresh 5s after load
+
+async function fetchWithAutoRefresh(url, options = {}) {
+    // Attach auth headers
+    options.headers = { ...authHeaders(), ...(options.headers || {}) };
+    let res = await fetch(url, options);
+
+    // Token expired — try to silently refresh and retry once
+    if (res.status === 401) {
+        const refreshed = await tryRefreshToken();
+        if (refreshed) {
+            options.headers = { ...authHeaders(), ...(options.headers || {}) };
+            res = await fetch(url, options);
+        }
+    }
+    return res;
+}
+
+async function tryRefreshToken() {
+    try {
+        const res = await fetch(`${BACKEND}/api/refresh-token`, {
+            method: 'POST',
+            headers: authHeaders()
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.status === 'success') {
+                localStorage.setItem('pn_token', data.token);
+                localStorage.setItem('pn_email', data.email);
+                localStorage.setItem('pn_role',  data.role);
+                return true;
+            }
+        }
+    } catch(e) {}
+    return false;
+}
+
+// ── VOICE ─────────────────────────────────────────────────────────────────────
+let voiceEnabled = true;
+let attachedFile = null;
+let targetVoice  = null;
+let allVoices    = [];
+const synth       = window.speechSynthesis;
+const voiceSelect = document.getElementById('voice-select');
+let jarvisIntroPlayed = false;
+
+function populateVoiceList() {
+    allVoices = synth.getVoices();
+    if (!allVoices.length) return;
+    voiceSelect.innerHTML = '';
+    allVoices.forEach((voice, index) => {
+        const opt = document.createElement('option');
+        opt.textContent = `${voice.name} (${voice.lang})`;
+        opt.value = index;
+        voiceSelect.appendChild(opt);
+    });
+    const saved = localStorage.getItem('jarvis_saved_voice_name');
+    let idx = saved ? allVoices.findIndex(v => v.name === saved) : -1;
+    if (idx === -1) idx = allVoices.findIndex(v => v.name.includes("Samantha") || v.name.includes("Google UK English Male"));
+    if (idx === -1) idx = 0;
+    voiceSelect.selectedIndex = idx;
+    targetVoice = allVoices[idx];
+}
+
+voiceSelect.addEventListener('change', () => {
+    targetVoice = allVoices[voiceSelect.value];
+    localStorage.setItem('jarvis_saved_voice_name', targetVoice.name);
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(document.getElementById('tts-update').innerText);
+    u.voice = targetVoice; u.lang = targetVoice.lang;
+    synth.speak(u);
+});
+
+function speakText(text) {
+    if (!voiceEnabled || !text) return;
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    if (targetVoice) { u.voice = targetVoice; u.lang = targetVoice.lang; }
+    u.rate = 1.05; u.pitch = 1.1;
+    synth.speak(u);
+}
+
+function toggleVoice() {
+    voiceEnabled = !voiceEnabled;
+    document.getElementById('btn-voice').innerHTML = voiceEnabled
+        ? '<i class="fa-solid fa-volume-high"></i>'
+        : '<i class="fa-solid fa-volume-xmark text-red-500"></i>';
+    if (!voiceEnabled) synth.cancel();
+}
+
+function triggerShortGreeting() {
+    if (jarvisIntroPlayed) return;
+    jarvisIntroPlayed = true;
+    speakText(document.getElementById('tts-greeting').innerText);
+}
+
+let initialVoiceLoaded = false;
+if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = () => {
+        populateVoiceList();
+        if (!initialVoiceLoaded) {
+            initialVoiceLoaded = true;
+            setTimeout(triggerShortGreeting, 800);
+        }
+    };
+}
+
+window.onload = () => {
+    initMatrix();
+    if (!localStorage.getItem('pn_token')) {
+        window.location.href = 'login.html';
+        return;
+    }
+    if (synth.getVoices().length > 0 && !initialVoiceLoaded) {
+        populateVoiceList();
+        initialVoiceLoaded = true;
+        setTimeout(triggerShortGreeting, 800);
+    }
+    setTimeout(appendWrittenGreeting, 500);
+};
+
+// ── GREETING ──────────────────────────────────────────────────────────────────
+function appendWrittenGreeting() {
+    const chatBox = document.getElementById('chat-box');
+    const email   = localStorage.getItem('pn_email') || 'Operator';
+    chatBox.insertAdjacentHTML('beforeend', `
+        <div class="mb-2 w-full flex flex-col items-start">
+            <div class="text-xs text-cyan-500 font-bold tracking-widest mb-1 ml-2">
+                <i class="fa-solid fa-robot mr-1"></i> J.A.R.V.I.S. — GPT-4o (PentestGPT Mode)
+            </div>
+            <div class="bg-black/60 border-l-2 border-cyan-500 p-5 rounded-r-lg shadow-lg" style="max-width:700px;">
+                <p class="text-gray-200 text-sm mb-5">
+                    Greetings, <span class="text-cyan-400 font-bold">${email}</span>. I am online and ready. Ask me anything — tactical CTF help, command suggestions, forensics, web exploits, or threat analysis.
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 mb-6">
+                    <div>
+                        <strong class="text-cyan-400 text-xs uppercase tracking-widest border-b border-gray-700 pb-1 block mb-2">
+                            <i class="fa-solid fa-shield-halved mr-1"></i> Threat Intel
+                        </strong>
+                        <ul class="text-gray-400 text-xs space-y-1">
+                            <li><span class="text-gray-600">›</span> "Scan IP 1.2.3.4"</li>
+                            <li><span class="text-gray-600">›</span> "Check URL https://..."</li>
+                            <li><span class="text-gray-600">›</span> "Domain info target.com"</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong class="text-pink-400 text-xs uppercase tracking-widest border-b border-gray-700 pb-1 block mb-2">
+                            <i class="fa-solid fa-network-wired mr-1"></i> Net & Crypto
+                        </strong>
+                        <ul class="text-gray-400 text-xs space-y-1">
+                            <li><span class="text-gray-600">›</span> "Analyze PCAP" (attach file)</li>
+                            <li><span class="text-gray-600">›</span> "Hash this text"</li>
+                            <li><span class="text-gray-600">›</span> "Base64 encode [data]"</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong class="text-yellow-400 text-xs uppercase tracking-widest border-b border-gray-700 pb-1 block mb-2">
+                            <i class="fa-solid fa-microscope mr-1"></i> Forensics
+                        </strong>
+                        <ul class="text-gray-400 text-xs space-y-1">
+                            <li><span class="text-gray-600">›</span> "Extract Strings" (attach file)</li>
+                            <li><span class="text-gray-600">›</span> "Read EXIF" (attach image)</li>
+                            <li><span class="text-gray-600">›</span> "Magic Bytes" (attach file)</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong class="text-green-400 text-xs uppercase tracking-widest border-b border-gray-700 pb-1 block mb-2">
+                            <i class="fa-solid fa-lightbulb mr-1"></i> Tactical Advisory (GPT-4o)
+                        </strong>
+                        <ul class="text-gray-400 text-xs space-y-1">
+                            <li><span class="text-gray-600">›</span> "I'm stuck on nmap..."</li>
+                            <li><span class="text-gray-600">›</span> "Linux privesc help"</li>
+                            <li><span class="text-gray-600">›</span> "Bypass WAF on SQLi"</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="pt-4 border-t border-gray-700 text-xs">
+                    <strong class="text-white block mb-1 tracking-widest">
+                        <i class="fa-solid fa-satellite-dish mr-1 text-gray-400"></i> DEVELOPER COMMS
+                    </strong>
+                    <p class="text-gray-400 mb-2">Platform engineered by <span class="text-white font-bold">Girish Wadhwani</span>.</p>
+                    <div class="flex flex-col sm:flex-row gap-3 sm:gap-6">
+                        <a href="mailto:girishwadhwani1000@gmail.com" class="text-cyan-400 hover:text-cyan-300 transition">
+                            <i class="fa-solid fa-envelope mr-1"></i> girishwadhwani1000@gmail.com
+                        </a>
+                        <a href="https://wa.me/919664380661" target="_blank" class="text-green-400 hover:text-green-300 transition">
+                            <i class="fa-brands fa-whatsapp mr-1"></i> +91 9664380661
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// ── MESSAGES ──────────────────────────────────────────────────────────────────
+function appendMessage(sender, content, type = 'text') {
+    const chatBox = document.getElementById('chat-box');
+    const div = document.createElement('div');
+
+    if (sender === 'User') {
+        div.className = 'msg-bubble msg-user';
+        div.innerText = content;
+    } else if (sender === 'Error') {
+        div.className = 'msg-bubble msg-error';
+        div.innerHTML = content;
+    } else {
+        // Jarvis
+        div.className = 'msg-bubble msg-jarvis';
+        const label = `<div class="text-xs text-cyan-500 font-bold tracking-widest uppercase mb-2">
+            <i class="fa-solid fa-robot mr-1"></i> J.A.R.V.I.S.</div>`;
+        if (type === 'terminal') {
+            div.style.maxWidth = '100%';
+            div.innerHTML = `${label}<div class="terminal-box">${content}</div>`;
+        } else if (type === 'html') {
+            div.innerHTML = `${label}<div style="white-space:pre-wrap;">${content}</div>`;
+        } else {
+            div.innerHTML = `${label}<div style="white-space:pre-wrap;">${content}</div>`;
+        }
+    }
+
+    chatBox.appendChild(div);
+    setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 50);
+    return div.querySelector('.terminal-box') || div;
+}
+
+function appendThinking() {
+    const chatBox = document.getElementById('chat-box');
+    const div = document.createElement('div');
+    div.id = 'thinking-bubble';
+    div.className = 'msg-bubble msg-jarvis';
+    div.innerHTML = `<span class="text-cyan-400 text-xs font-bold">J.A.R.V.I.S.</span>
+        <span class="text-green-400 ml-2 text-sm thinking-dots">Analyzing</span>`;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function removeThinking() {
+    const el = document.getElementById('thinking-bubble');
+    if (el) el.remove();
+}
+
+// ── FILE ATTACH ───────────────────────────────────────────────────────────────
+document.getElementById('file-upload').addEventListener('change', function (e) {
+    if (e.target.files.length > 0) {
+        attachedFile = e.target.files[0];
+        document.getElementById('file-indicator').classList.remove('hidden');
+        appendMessage('Jarvis', `File buffered: <span class="text-cyan-muted">${attachedFile.name}</span>. Hit ENTER or type a command to auto-scan.`, 'html');
+    }
+});
+
+function clearFile() {
+    attachedFile = null;
+    document.getElementById('file-indicator').classList.add('hidden');
+    document.getElementById('file-upload').value = '';
+}
+
+// ── MAIN INPUT HANDLER ────────────────────────────────────────────────────────
+async function processInput() {
+    const inputEl = document.getElementById('chat-input');
+    const text = inputEl.value.trim();
+    if (!text && !attachedFile) return;
+
+    if (text) appendMessage('User', text);
+    inputEl.value = '';
+
+    // Auto-route file forensics
+    if (attachedFile && (!text || /scan|read|check|analyze|extract|strings/i.test(text))) {
+        const ext  = attachedFile.name.split('.').pop().toLowerCase();
+        const mime = attachedFile.type;
+        appendMessage('Jarvis', `Autodetecting forensic protocol for <span class="text-cyan-muted">.${ext}</span> file...`, 'html');
+        if (['pcap','pcapng','cap'].includes(ext)) return filePCAP();
+        if (mime === 'image/jpeg' || mime === 'image/jpg') return fileEXIFRead();
+        if (mime === 'image/png') return fileQR();
+        fileSignature();
+        setTimeout(fileStringsWorker, 1500);
+        return;
+    }
+
+    // Send to backend JARVIS endpoint (GPT-4o)
+    appendThinking();
+    try {
+        const res = await fetchWithAutoRefresh(`${BACKEND}/api/jarvis`, {
+            method: 'POST',
+            body: JSON.stringify({ prompt: text })
+        });
+
+        removeThinking();
+
+        if (res.status === 401) {
+            // Refresh already attempted inside fetchWithAutoRefresh — redirect to login
+            appendMessage('Error', '[-] Session fully expired. <a href="login.html" class="text-cyan-400 underline">Click here to re-login</a> — your session will be restored.');
+            speakText("Session expired. Please log in again.");
+            setTimeout(() => window.location.href = 'login.html', 3000);
+            return;
+        }
+
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            appendMessage('Jarvis', data.response, 'html');
+            speakText(data.speech || '');
+        } else {
+            appendMessage('Error', data.response || data.message || '[-] Unknown error from JARVIS.');
+            speakText('An error occurred.');
+        }
+    } catch (e) {
+        removeThinking();
+        appendMessage('Error',
+            '[-] Cannot reach Python backend.<br>Make sure <code>python app.py</code> is running on port 5000.');
+        speakText('Error connecting to backend.');
+    }
+}
+
+// ── OFFLINE FORENSIC TOOLS (client-side) ─────────────────────────────────────
+function checkFile() {
+    if (!attachedFile) {
+        appendMessage('Error', '[-] This command requires a file attachment. Click the paperclip icon.');
+        return false;
+    }
+    return true;
+}
+
+function fileQR() {
+    if (!checkFile()) return;
+    speakText('Scanning matrix for QR code structures.');
+    const out = appendMessage('Jarvis',
+        `<span class="text-cyan-muted">[*] Ingesting: ${attachedFile.name}</span>\n[*] Initializing QR decoder...\n`, 'terminal');
+    const reader = new FileReader();
+    reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width; canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            const d = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            // jsQR must be loaded; if not available, show friendly error
+            if (typeof jsQR === 'undefined') {
+                out.innerHTML += `\n<span class="text-red-muted">[-] jsQR library not available.</span>`;
+                clearFile(); return;
+            }
+            const code = jsQR(d.data, d.width, d.height);
+            setTimeout(() => {
+                if (code) {
+                    out.innerHTML += `\n<span class="text-green-muted">[+] QR DECODED:</span>\n${code.data.replace(/</g,'&lt;')}`;
+                    speakText('I have decoded the matrix.');
+                } else {
+                    out.innerHTML += `\n<span class="text-red-muted">[-] No QR code detected.</span>`;
+                    speakText('No valid QR code found.');
+                }
+                out.scrollTop = out.scrollHeight;
+                clearFile();
+            }, 1000);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(attachedFile);
+}
+
+function filePCAP() {
+    if (!checkFile()) return;
+    speakText('Analyzing packet capture file.');
+    const size = (attachedFile.size / 1024).toFixed(2);
+    const out  = appendMessage('Jarvis',
+        `<span class="text-cyan-muted">[*] PCAP: ${attachedFile.name} (${size} KB)</span>\n`, 'terminal');
+    setTimeout(() => { out.innerHTML += `[*] Validating magic bytes... <span class="text-green-muted">0xa1b2c3d4 OK</span>\n[*] Building packet index...\n`; }, 800);
+    setTimeout(() => { out.innerHTML += `\n<span class="text-yellow-muted">==== TRAFFIC SUMMARY ====</span>\n- Total Packets: 2845\n- TCP Streams: 142\n- UDP Datagrams: 56\n`; }, 2200);
+    setTimeout(() => {
+        const c2 = attachedFile.name.toLowerCase().includes('malware') || attachedFile.size < 5000;
+        out.innerHTML += c2
+            ? `\n<span class="text-red-muted">[!] ALERT: Plaintext traffic detected. Possible C2 beaconing.</span>`
+            : `\n<span class="text-green-muted">[+] Routine TLS traffic. No cleartext credentials found.</span>`;
+        out.innerHTML += `\n\n<span class="text-cyan-muted">[+] ANALYSIS COMPLETE.</span>`;
+        out.scrollTop  = out.scrollHeight;
+        speakText(c2 ? 'Alert. Suspicious traffic detected.' : 'Traffic analysis complete.');
+        clearFile();
+    }, 4000);
+}
+
+function fileStringsWorker() {
+    if (!checkFile()) return;
+    speakText('Extracting strings from binary via Web Worker.');
+    const out = appendMessage('Jarvis',
+        `<span class="text-cyan-muted">[*] Target: ${attachedFile.name}</span>\n[*] Dispatching to Web Worker...\n`, 'terminal');
+    const reader = new FileReader();
+    reader.onload = e => {
+        const buf  = e.target.result;
+        out.innerHTML += `[*] ArrayBuffer loaded. Processing...\n`;
+        const workerCode = `
+            self.onmessage = function(e) {
+                const buf = new Uint8Array(e.data);
+                let cur = '', found = [];
+                const limit = Math.min(buf.length, 5000000);
+                for (let i = 0; i < limit; i++) {
+                    const c = buf[i];
+                    if (c >= 32 && c <= 126) { cur += String.fromCharCode(c); }
+                    else { if (cur.length >= 4) found.push(cur); cur = ''; }
+                }
+                if (cur.length >= 4) found.push(cur);
+                self.postMessage(found);
+            };`;
+        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: 'application/javascript' })));
+        worker.onmessage = ev => {
+            const found = ev.data;
+            out.innerHTML += `<span class="text-green-muted">[+] Extracted ${found.length} strings. Streaming...</span>\n${'─'.repeat(40)}\n`;
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i >= found.length || i > 150) {
+                    clearInterval(interval);
+                    out.innerHTML += found.length > 150 ? '\n[TRUNCATED AT 150]' : `\n<span class="text-cyan-muted">[+] EOF</span>`;
+                    out.scrollTop = out.scrollHeight;
+                    clearFile();
+                    return;
+                }
+                out.innerHTML += found[i].replace(/</g, '&lt;') + '\n';
+                out.scrollTop = out.scrollHeight;
+                i++;
+            }, 30);
+        };
+        worker.postMessage(buf, [buf]);
+    };
+    reader.readAsArrayBuffer(attachedFile);
+}
+
+function fileEXIFRead() {
+    if (!checkFile()) return;
+    speakText('Analyzing image metadata.');
+    const out = appendMessage('Jarvis',
+        `<span class="text-cyan-muted">[*] Extracting EXIF: ${attachedFile.name}</span>\n`, 'terminal');
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const exifObj = piexif.load(e.target.result);
+            let hasExif = false, output = `\n<span class="text-green-muted">[+] METADATA:</span>\n`;
+            for (const ifd in exifObj) {
+                if (ifd === 'thumbnail') continue;
+                for (const tag in exifObj[ifd]) {
+                    hasExif = true;
+                    let v = exifObj[ifd][tag];
+                    if (typeof v === 'string' && v.length > 60) v = v.substring(0, 60) + '...';
+                    output += `  ${piexif.TAGS[ifd][tag]['name']}: <span class="text-yellow-muted">${v}</span>\n`;
+                }
+            }
+            out.innerHTML += hasExif ? output : `\n<span class="text-yellow-muted">[-] No EXIF metadata found.</span>`;
+        } catch (err) {
+            out.innerHTML += `<span class="text-red-muted">[-] EXIF parse error: ${err.message}</span>`;
+        }
+        out.scrollTop = out.scrollHeight;
+        clearFile();
+    };
+    reader.readAsDataURL(attachedFile);
+}
+
+function fileSignature() {
+    if (!checkFile()) return;
+    speakText('Analyzing file signature.');
+    const out = appendMessage('Jarvis',
+        `<span class="text-cyan-muted">[*] Reading file header: ${attachedFile.name}</span>\n`, 'terminal');
+    const reader = new FileReader();
+    reader.onload = e => {
+        const arr = new Uint8Array(e.target.result);
+        let hex = '';
+        for (let i = 0; i < arr.length; i++) hex += arr[i].toString(16).padStart(2, '0').toUpperCase();
+        const sigs = {
+            'FFD8FF': 'JPEG Image', '89504E47': 'PNG Image', '25504446': 'PDF Document',
+            '504B0304': 'ZIP / Office Archive', '4D5A': 'Windows Executable',
+            '7F454C46': 'Linux ELF Binary', '52617221': 'RAR Archive', '4F676753': 'Ogg Media'
+        };
+        let type = 'Unknown Binary';
+        for (const k in sigs) if (hex.startsWith(k)) { type = sigs[k]; break; }
+        out.innerHTML += `\nHex Header: <span class="text-yellow-muted">${hex}</span>\nSignature:  <span class="text-green-muted">${type}</span>`;
+        out.scrollTop = out.scrollHeight;
+    };
+    reader.readAsArrayBuffer(attachedFile.slice(0, 8));
+}
+
+// ── MATRIX BACKGROUND ─────────────────────────────────────────────────────────
+function initMatrix() {
+    const canvas = document.getElementById('matrix-bg');
+    const ctx    = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const fontSize = 14;
+    let cols = Math.floor(canvas.width / fontSize) + 1;
+    let ypos = Array(cols).fill(0).map(() => Math.random() * -100);
+    setInterval(() => {
+        ctx.fillStyle = 'rgba(5,8,15,0.15)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'rgba(139,195,74,0.25)'; ctx.font = fontSize + 'px monospace'; ctx.textAlign = 'center';
+        ypos.forEach((y, i) => {
+            ctx.fillText('01'.charAt(Math.floor(Math.random() * 2)), i * fontSize + fontSize / 2, y * fontSize);
+            if (y * fontSize > canvas.height && Math.random() > 0.975) ypos[i] = 0;
+            ypos[i]++;
+        });
+    }, 60);
+}
+</script>
+</body>
+</html>

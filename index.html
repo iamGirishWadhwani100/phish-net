@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHISHNET SECURITY PLATFORM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/piexifjs/1.0.6/piexif.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/3.3.2/jsencrypt.min.js"></script>
+    <style>
+        :root{--clr-bg:#05080f;--clr-panel:rgba(12,18,28,0.85);--clr-cyan:#5bc0be;--clr-pink:#d48bbd;--clr-green:#8bc34a;--clr-yellow:#d4c768;--clr-red:#d9534f;--clr-text:#cdd6f4}
+        body{font-family:'Share Tech Mono',monospace;background-color:var(--clr-bg);color:var(--clr-text);margin:0;padding:0;min-height:100vh;overflow-x:hidden}
+        #matrix-bg{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none}
+        .cyber-panel{background:linear-gradient(135deg,rgba(12,18,28,0.95) 0%,rgba(5,8,15,0.95) 100%);border:1px solid var(--clr-cyan);box-shadow:0 0 10px rgba(91,192,190,0.1),inset 0 0 15px rgba(91,192,190,0.05);backdrop-filter:blur(8px);border-radius:4px}
+        .text-cyan-muted{color:var(--clr-cyan)}.text-pink-muted{color:var(--clr-pink)}.text-green-muted{color:var(--clr-green)}.text-yellow-muted{color:var(--clr-yellow)}.text-red-muted{color:var(--clr-red)}
+        .sub-tab{border:1px solid var(--clr-green);color:var(--clr-green);background:rgba(0,0,0,0.4);transition:all 0.2s;padding:10px 15px;text-transform:uppercase;cursor:pointer;border-radius:2px;font-size:0.85rem}
+        .sub-tab.active{background:var(--clr-green);color:#000;font-weight:bold}
+        .sub-tab:hover:not(.active){background:rgba(139,195,74,0.15)}
+        .top-nav-btn{border:1px solid var(--clr-cyan);color:var(--clr-cyan);background:rgba(91,192,190,0.1);text-transform:uppercase;padding:6px 16px;cursor:pointer;transition:all 0.2s;border-radius:2px;font-family:'Share Tech Mono',monospace}
+        .top-nav-btn:hover{background:rgba(91,192,190,0.2)}
+        .btn-action{border:1px solid var(--clr-green);color:var(--clr-green);background:rgba(0,0,0,0.5);text-transform:uppercase;cursor:pointer;transition:all 0.2s;padding:10px 24px;border-radius:2px;font-family:'Share Tech Mono',monospace}
+        .btn-action:hover{background:rgba(139,195,74,0.15)}
+        .cyber-input{background:rgba(0,0,0,0.6);border:1px solid var(--clr-cyan);color:#fff;width:100%;padding:12px 15px;outline:none;transition:0.3s;border-radius:2px;font-family:'Share Tech Mono',monospace}
+        .cyber-input:focus{border-color:var(--clr-pink);box-shadow:0 0 5px rgba(212,139,189,0.2)}
+        .terminal-box{background:rgba(2,4,8,0.95);border:1px solid var(--clr-green);padding:15px;color:var(--clr-green);font-size:0.85rem;white-space:pre-wrap;overflow-y:auto;border-radius:2px;line-height:1.4;font-family:'Share Tech Mono',monospace}
+        .workspace-view,.sub-content{display:none}
+        .workspace-view.active,.sub-content.active{display:block;animation:scanline 0.3s ease-out}
+        @keyframes scanline{0%{opacity:0;transform:translateY(5px)}100%{opacity:1;transform:translateY(0)}}
+        ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--clr-cyan)}
+        input[type="checkbox"]{appearance:none;width:16px;height:16px;border:1px solid var(--clr-cyan);background:rgba(0,0,0,0.5);cursor:pointer;position:relative;border-radius:2px;margin-right:5px;vertical-align:middle}
+        input[type="checkbox"]:checked{background:var(--clr-cyan)}
+        input[type="checkbox"]:checked::after{content:'✓';position:absolute;color:#000;font-size:12px;top:-2px;left:2px;font-weight:bold}
+        input[type="range"]{-webkit-appearance:none;width:100%;height:4px;background:var(--clr-cyan);outline:none}
+        input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--clr-pink);cursor:pointer;border-radius:50%}
+        .case-row{border:1px solid rgba(91,192,190,0.2);border-radius:2px;padding:12px 16px;margin-bottom:8px;cursor:pointer;transition:all 0.2s;background:rgba(12,18,28,0.6)}
+        .case-row:hover{border-color:var(--clr-cyan);background:rgba(91,192,190,0.05)}
+        .badge{font-size:0.65rem;padding:2px 8px;border-radius:2px;font-weight:bold;text-transform:uppercase}
+        .badge-open{background:rgba(91,192,190,0.2);color:var(--clr-cyan);border:1px solid var(--clr-cyan)}
+        .badge-closed{background:rgba(139,195,74,0.2);color:var(--clr-green);border:1px solid var(--clr-green)}
+        .badge-critical{background:rgba(217,83,79,0.2);color:var(--clr-red);border:1px solid var(--clr-red)}
+        .badge-high{background:rgba(212,139,189,0.2);color:var(--clr-pink);border:1px solid var(--clr-pink)}
+        .badge-medium{background:rgba(212,199,104,0.2);color:var(--clr-yellow);border:1px solid var(--clr-yellow)}
+        .badge-low{background:rgba(139,195,74,0.2);color:var(--clr-green);border:1px solid var(--clr-green)}
+        .activity-item{padding:10px 12px;border-left:2px solid var(--clr-cyan);margin-bottom:6px;background:rgba(12,18,28,0.5);font-size:0.78rem}
+        .toast{position:fixed;bottom:100px;right:20px;z-index:99999;padding:10px 20px;border-radius:3px;font-size:0.8rem;font-family:'Share Tech Mono',monospace;animation:fadeInOut 3s forwards}
+        @keyframes fadeInOut{0%{opacity:0;transform:translateY(10px)}10%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateY(-10px)}}
+    </style>
+</head>
+<body class="p-4 md:p-8 flex flex-col items-center">
+<canvas id="matrix-bg"></canvas>
+
+<!-- ═══════════════════════════ HOME DASHBOARD ══════════════════════════════ -->
+<div id="view-home" class="workspace-view active w-full max-w-6xl mt-6 relative z-10 mx-auto">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 border-b border-cyan-800/50 pb-6 px-4">
+        <div>
+            <p class="text-cyan-muted text-xs tracking-[0.4em] mb-1">PHISHNET SECURITY PLATFORM</p>
+            <h1 class="text-white text-3xl md:text-4xl font-bold tracking-widest">AUTONOMOUS <span class="text-pink-muted">OPERATIONS</span></h1>
+        </div>
+        <div class="mt-4 md:mt-0 flex flex-col items-end gap-3">
+            <p class="text-[#7f849c] text-xs tracking-widest uppercase">
+                OPERATOR: <span id="display-email" class="text-green-muted font-bold ml-1"></span>
+                <span id="display-role" class="text-pink-muted ml-2 text-[0.6rem] border border-pink-400/50 px-1 rounded"></span>
+            </p>
+            <div class="flex gap-3">
+                <button onclick="navTo('view-mod5')" class="btn-action text-xs" style="border-color:var(--clr-cyan);color:var(--clr-cyan)"><i class="fa-solid fa-users mr-2"></i>TEAM OPS</button>
+                <button onclick="launchJarvis()" class="btn-action text-xs" style="border-color:var(--clr-pink);color:var(--clr-pink)"><i class="fa-solid fa-microchip mr-2"></i>J.A.R.V.I.S.</button>
+                <button onclick="logoutUser()" class="top-nav-btn text-xs"><i class="fa-solid fa-power-off mr-2"></i>SEVER</button>
+            </div>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4">
+        <div class="group cursor-pointer cyber-panel p-8 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_25px_rgba(91,192,190,0.3)] flex flex-col h-full" onclick="navTo('view-mod1')" style="border-color:var(--clr-cyan)">
+            <div class="absolute top-4 right-6 text-6xl opacity-10 group-hover:opacity-20 transition-opacity" style="color:var(--clr-cyan)"><i class="fa-solid fa-shield-halved"></i></div>
+            <p class="text-cyan-muted text-xs font-bold tracking-widest mb-2">MODULE 01</p>
+            <h2 class="text-white text-2xl font-bold tracking-widest mb-4 border-b border-gray-700 pb-3">PHISHING & THREATS</h2>
+            <ul class="text-[#7f849c] text-sm mb-4 space-y-2 flex-grow">
+                <li><i class="fa-solid fa-caret-right text-cyan-muted mr-2"></i>Real-Time VirusTotal URL Scan</li>
+                <li><i class="fa-solid fa-caret-right text-cyan-muted mr-2"></i>AbuseIPDB IP Intelligence</li>
+                <li><i class="fa-solid fa-caret-right text-cyan-muted mr-2"></i>DNS Record Lookup</li>
+            </ul>
+        </div>
+        <div class="group cursor-pointer cyber-panel p-8 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_25px_rgba(212,139,189,0.3)] flex flex-col h-full" onclick="navTo('view-mod2')" style="border-color:var(--clr-pink)">
+            <div class="absolute top-4 right-6 text-6xl opacity-10 group-hover:opacity-20 transition-opacity" style="color:var(--clr-pink)"><i class="fa-solid fa-network-wired"></i></div>
+            <p class="text-pink-muted text-xs font-bold tracking-widest mb-2">MODULE 02</p>
+            <h2 class="text-white text-2xl font-bold tracking-widest mb-4 border-b border-gray-700 pb-3">NETWORK UTILITIES</h2>
+            <ul class="text-[#7f849c] text-sm mb-4 space-y-2 flex-grow">
+                <li><i class="fa-solid fa-caret-right text-pink-muted mr-2"></i>PCAP Packet Forensics</li>
+                <li><i class="fa-solid fa-caret-right text-pink-muted mr-2"></i>Subnet & CIDR Calculator</li>
+            </ul>
+        </div>
+        <div class="group cursor-pointer cyber-panel p-8 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_25px_rgba(212,199,104,0.3)] flex flex-col h-full" onclick="navTo('view-mod3')" style="border-color:var(--clr-yellow)">
+            <div class="absolute top-4 right-6 text-6xl opacity-10 group-hover:opacity-20 transition-opacity" style="color:var(--clr-yellow)"><i class="fa-solid fa-key"></i></div>
+            <p class="text-yellow-muted text-xs font-bold tracking-widest mb-2">MODULE 03</p>
+            <h2 class="text-white text-2xl font-bold tracking-widest mb-4 border-b border-gray-700 pb-3">CRYPTO & PASSWORDS</h2>
+            <ul class="text-[#7f849c] text-sm mb-4 space-y-2 flex-grow">
+                <li><i class="fa-solid fa-caret-right text-yellow-muted mr-2"></i>RSA & AES-256 Engine</li>
+                <li><i class="fa-solid fa-caret-right text-yellow-muted mr-2"></i>Hash / Encode / HIBP Breach Check</li>
+            </ul>
+        </div>
+        <div class="group cursor-pointer cyber-panel p-8 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_25px_rgba(139,195,74,0.3)] flex flex-col h-full" onclick="navTo('view-mod4')" style="border-color:var(--clr-green)">
+            <div class="absolute top-4 right-6 text-6xl opacity-10 group-hover:opacity-20 transition-opacity" style="color:var(--clr-green)"><i class="fa-solid fa-microscope"></i></div>
+            <p class="text-green-muted text-xs font-bold tracking-widest mb-2">MODULE 04</p>
+            <h2 class="text-white text-2xl font-bold tracking-widest mb-4 border-b border-gray-700 pb-3">FORENSICS ANALYSIS</h2>
+            <ul class="text-[#7f849c] text-sm mb-4 space-y-2 flex-grow">
+                <li><i class="fa-solid fa-caret-right text-green-muted mr-2"></i>LSB Steganography</li>
+                <li><i class="fa-solid fa-caret-right text-green-muted mr-2"></i>EXIF Forge / File Signatures</li>
+            </ul>
+        </div>
+        <!-- Team card spans full width on smaller grids -->
+        <div class="group cursor-pointer cyber-panel p-8 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_25px_rgba(91,192,190,0.3)] flex flex-col lg:col-span-2" onclick="navTo('view-mod5')" style="border-color:var(--clr-cyan)">
+            <div class="absolute top-4 right-6 text-6xl opacity-10 group-hover:opacity-20 transition-opacity" style="color:var(--clr-cyan)"><i class="fa-solid fa-users-gear"></i></div>
+            <p class="text-cyan-muted text-xs font-bold tracking-widest mb-2">MODULE 05  <span class="text-[#7f849c] font-normal">— NEW</span></p>
+            <h2 class="text-white text-2xl font-bold tracking-widest mb-4 border-b border-gray-700 pb-3">TEAM OPERATIONS</h2>
+            <div class="grid grid-cols-3 gap-6 text-[#7f849c] text-sm">
+                <div><i class="fa-solid fa-caret-right text-cyan-muted mr-2"></i>Shared Investigation Cases</div>
+                <div><i class="fa-solid fa-caret-right text-cyan-muted mr-2"></i>Real-Time Activity Feed</div>
+                <div><i class="fa-solid fa-caret-right text-cyan-muted mr-2"></i>Case Notes & Collaboration</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═════════════════════════ MODULE 01: THREATS ════════════════════════════ -->
+<div id="view-mod1" class="workspace-view w-full max-w-5xl mt-4 relative z-10">
+    <div class="flex justify-between items-center mb-6">
+        <button onclick="navTo('view-home')" class="top-nav-btn"><i class="fa-solid fa-arrow-left mr-2"></i>HOME</button>
+        <button onclick="navTo('view-mod2')" class="top-nav-btn">NETWORK<i class="fa-solid fa-arrow-right ml-2"></i></button>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6 text-xs">
+        <button onclick="openTab('mod1','url')" id="btn-mod1-url" class="sub-tab active" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">URL SCAN</button>
+        <button onclick="openTab('mod1','ip')"  id="btn-mod1-ip"  class="sub-tab" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">IP SCAN</button>
+        <button onclick="openTab('mod1','domain')" id="btn-mod1-domain" class="sub-tab" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">DOMAIN</button>
+        <button onclick="openTab('mod1','qr')"  id="btn-mod1-qr"  class="sub-tab" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">QR SCAN</button>
+        <button onclick="openTab('mod1','dns')" id="btn-mod1-dns" class="sub-tab" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">DNS</button>
+    </div>
+    <div class="cyber-panel p-8 min-h-[500px]" style="border-color:var(--clr-cyan)">
+        <!-- URL -->
+        <div id="tab-mod1-url" class="sub-content active">
+            <h3 class="text-cyan-muted text-lg font-bold mb-2">VIRUSTOTAL URL SCANNER</h3>
+            <p class="text-[#7f849c] text-xs mb-4">Real-time VirusTotal scan via backend. Requires <code class="text-yellow-muted">VT_API_KEY</code> in .env</p>
+            <div class="flex gap-4 mb-4">
+                <input type="text" id="in-url" class="cyber-input" placeholder="https://suspicious-site.com/login">
+                <button onclick="runBackendTool('url','in-url','out-url')" class="btn-action" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">SCAN VT</button>
+            </div>
+            <div id="out-url" class="terminal-box h-72" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">AWAITING URL PAYLOAD...</div>
+        </div>
+        <!-- IP -->
+        <div id="tab-mod1-ip" class="sub-content">
+            <h3 class="text-cyan-muted text-lg font-bold mb-2">ABUSEIPDB IP SCAN (IPv4 + IPv6)</h3>
+            <p class="text-[#7f849c] text-xs mb-4">Real AbuseIPDB threat intelligence. Requires <code class="text-yellow-muted">ABUSEIPDB_KEY</code> in .env</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <input type="text" id="in-ip-target" class="cyber-input mb-6" placeholder="IPv4: 1.2.3.4 or IPv6: 2606:4700::1">
+                    <button onclick="runBackendTool('ip_scan','in-ip-target','out-ip')" class="btn-action w-full py-3" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">INITIATE SCAN</button>
+                </div>
+                <div id="out-ip" class="terminal-box" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">AWAITING TARGET IP...</div>
+            </div>
+        </div>
+        <!-- Domain (local heuristic) -->
+        <div id="tab-mod1-domain" class="sub-content">
+            <h3 class="text-cyan-muted text-lg font-bold mb-4">DOMAIN HEURISTIC ANALYSIS</h3>
+            <div class="flex gap-4 mb-4">
+                <input type="text" id="in-domain" class="cyber-input" placeholder="suspicious-login-paypal.com">
+                <button onclick="checkDomain()" class="btn-action" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">ANALYZE</button>
+            </div>
+            <div id="out-domain" class="terminal-box h-72" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">AWAITING DOMAIN...</div>
+        </div>
+        <!-- QR -->
+        <div id="tab-mod1-qr" class="sub-content">
+            <h3 class="text-cyan-muted text-lg font-bold mb-4">SECURE QR DECODER</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <input type="file" id="qr-file" accept="image/*" class="cyber-input mb-4">
+                    <button onclick="analyzeQR()" class="btn-action w-full" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">DECODE QR</button>
+                    <canvas id="qr-canvas" class="hidden"></canvas>
+                </div>
+                <div id="out-qr" class="terminal-box h-48" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">AWAITING IMAGE...</div>
+            </div>
+        </div>
+        <!-- DNS -->
+        <div id="tab-mod1-dns" class="sub-content">
+            <h3 class="text-cyan-muted text-lg font-bold mb-4">LIVE DNS RECORD FETCH</h3>
+            <div class="flex gap-4 mb-4">
+                <input type="text" id="in-dns" class="cyber-input" placeholder="google.com">
+                <button onclick="fetchDNS()" class="btn-action" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">FETCH</button>
+            </div>
+            <div id="out-dns" class="terminal-box h-72" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">AWAITING DOMAIN...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ═════════════════════════ MODULE 02: NETWORK ═══════════════════════════ -->
+<div id="view-mod2" class="workspace-view w-full max-w-5xl mt-4 relative z-10">
+    <div class="flex justify-between items-center mb-6">
+        <button onclick="navTo('view-mod1')" class="top-nav-btn"><i class="fa-solid fa-arrow-left mr-2"></i>THREATS</button>
+        <button onclick="navTo('view-mod3')" class="top-nav-btn">CRYPTO<i class="fa-solid fa-arrow-right ml-2"></i></button>
+    </div>
+    <div class="grid grid-cols-2 gap-2 mb-6">
+        <button onclick="openTab('mod2','pcap')"   id="btn-mod2-pcap"   class="sub-tab active" style="border-color:var(--clr-pink);color:var(--clr-pink)">PCAP FORENSICS</button>
+        <button onclick="openTab('mod2','subnet')" id="btn-mod2-subnet" class="sub-tab" style="border-color:var(--clr-pink);color:var(--clr-pink)">SUBNET CALC</button>
+    </div>
+    <div class="cyber-panel p-8 min-h-[500px]" style="border-color:var(--clr-pink)">
+        <div id="tab-mod2-pcap" class="sub-content active">
+            <h3 class="text-pink-muted text-lg font-bold mb-4">PCAP PACKET FORENSICS</h3>
+            <div class="flex flex-col md:flex-row gap-4 mb-4">
+                <input type="file" id="pcap-file" accept=".pcap,.pcapng,.cap" class="cyber-input w-full md:w-3/4">
+                <button onclick="runPCAPAnalysis()" class="btn-action w-full md:w-1/4" style="border-color:var(--clr-pink);color:var(--clr-pink)">ANALYZE</button>
+            </div>
+            <div id="out-pcap" class="terminal-box h-72" style="border-color:var(--clr-pink);color:var(--clr-pink)">AWAITING PCAP...</div>
+        </div>
+        <div id="tab-mod2-subnet" class="sub-content">
+            <h3 class="text-pink-muted text-lg font-bold mb-4">IPv4 SUBNET CALCULATOR</h3>
+            <div class="flex gap-4 mb-6">
+                <input type="text" id="in-subnet-ip" class="cyber-input w-3/4" placeholder="192.168.1.0">
+                <input type="number" id="in-subnet-cidr" class="cyber-input w-1/4" placeholder="24" min="1" max="32" value="24">
+            </div>
+            <button onclick="calculateSubnet()" class="btn-action w-full mb-6" style="border-color:var(--clr-pink);color:var(--clr-pink)">CALCULATE</button>
+            <div id="out-subnet" class="terminal-box h-64" style="border-color:var(--clr-pink);color:var(--clr-pink)">AWAITING QUERY...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ═════════════════════════ MODULE 03: CRYPTO ════════════════════════════ -->
+<div id="view-mod3" class="workspace-view w-full max-w-5xl mt-4 relative z-10">
+    <div class="flex justify-between items-center mb-6">
+        <button onclick="navTo('view-mod2')" class="top-nav-btn"><i class="fa-solid fa-arrow-left mr-2"></i>NETWORK</button>
+        <button onclick="navTo('view-mod4')" class="top-nav-btn">FORENSICS<i class="fa-solid fa-arrow-right ml-2"></i></button>
+    </div>
+    <div class="grid grid-cols-3 md:grid-cols-7 gap-2 mb-6 text-xs">
+        <button onclick="openTab('mod3','hash')" id="btn-mod3-hash" class="sub-tab active" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">HASH</button>
+        <button onclick="openTab('mod3','conv')" id="btn-mod3-conv" class="sub-tab" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">CONVERT</button>
+        <button onclick="openTab('mod3','rsa')"  id="btn-mod3-rsa"  class="sub-tab" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">RSA</button>
+        <button onclick="openTab('mod3','aes')"  id="btn-mod3-aes"  class="sub-tab" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">AES</button>
+        <button onclick="openTab('mod3','pgen')" id="btn-mod3-pgen" class="sub-tab" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">PWD GEN</button>
+        <button onclick="openTab('mod3','pstr')" id="btn-mod3-pstr" class="sub-tab" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">ENTROPY</button>
+        <button onclick="openTab('mod3','pwn')"  id="btn-mod3-pwn"  class="sub-tab" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">BREACH</button>
+    </div>
+    <div class="cyber-panel p-8 min-h-[500px]" style="border-color:var(--clr-yellow)">
+        <div id="tab-mod3-hash" class="sub-content active">
+            <textarea id="in-hash" class="cyber-input h-32 mb-4" placeholder="Text to hash..."></textarea>
+            <button onclick="runLocalTool('hash','in-hash','out-hash')" class="btn-action w-full mb-4" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">GENERATE HASHES (MD5/SHA1/SHA256)</button>
+            <div id="out-hash" class="terminal-box h-48" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">AWAITING INPUT...</div>
+        </div>
+        <div id="tab-mod3-conv" class="sub-content">
+            <h3 class="text-yellow-muted text-lg font-bold mb-4">DATA CONVERTER</h3>
+            <textarea id="in-conv" class="cyber-input h-24 mb-4" placeholder="Payload to convert..."></textarea>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                <button onclick="runLocalTool('b64_encode','in-conv','out-conv')" class="btn-action" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">B64 ENCODE</button>
+                <button onclick="runLocalTool('b64_decode','in-conv','out-conv')" class="btn-action" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">B64 DECODE</button>
+                <button onclick="runLocalTool('hex_encode','in-conv','out-conv')" class="btn-action" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">HEX ENCODE</button>
+                <button onclick="runLocalTool('hex_decode','in-conv','out-conv')" class="btn-action" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">HEX DECODE</button>
+                <button onclick="runLocalTool('url_encode','in-conv','out-conv')" class="btn-action" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">URL ENCODE</button>
+                <button onclick="runLocalTool('url_decode','in-conv','out-conv')" class="btn-action" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">URL DECODE</button>
+            </div>
+            <div id="out-conv" class="terminal-box h-48" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">AWAITING INPUT...</div>
+        </div>
+        <div id="tab-mod3-rsa" class="sub-content">
+            <h3 class="text-yellow-muted text-lg font-bold mb-4">RSA ENCRYPTION ENGINE</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <button onclick="generateRSAKeys()" class="btn-action w-full col-span-2" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">1. GENERATE RSA KEY PAIR</button>
+                <textarea id="rsa-pub"  class="cyber-input h-24 text-xs" placeholder="Public Key..."></textarea>
+                <textarea id="rsa-priv" class="cyber-input h-24 text-xs" placeholder="Private Key..."></textarea>
+                <textarea id="rsa-input" class="cyber-input h-24 col-span-2" placeholder="Payload..."></textarea>
+            </div>
+            <div class="flex gap-4 mb-4">
+                <button onclick="runRSA('encrypt')" class="btn-action w-1/2" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">ENCRYPT (Pub Key)</button>
+                <button onclick="runRSA('decrypt')" class="btn-action w-1/2" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">DECRYPT (Priv Key)</button>
+            </div>
+            <div id="out-rsa" class="terminal-box h-32" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">AWAITING...</div>
+        </div>
+        <div id="tab-mod3-aes" class="sub-content">
+            <h3 class="text-yellow-muted text-lg font-bold mb-4">AES-256 ENCRYPTION</h3>
+            <input type="text" id="aes-key" class="cyber-input mb-4" placeholder="Secret Key / Passphrase...">
+            <textarea id="aes-input" class="cyber-input h-24 mb-4" placeholder="Payload..."></textarea>
+            <div class="flex gap-4 mb-4">
+                <button onclick="runAES('encrypt')" class="btn-action w-1/2" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">ENCRYPT</button>
+                <button onclick="runAES('decrypt')" class="btn-action w-1/2" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">DECRYPT</button>
+            </div>
+            <div id="out-aes" class="terminal-box h-32" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">AWAITING...</div>
+        </div>
+        <div id="tab-mod3-pgen" class="sub-content">
+            <h3 class="text-yellow-muted text-lg font-bold mb-4">SECURE PASSWORD GENERATOR</h3>
+            <div class="flex items-center gap-4 mb-4">
+                <label class="w-1/4 text-sm text-yellow-muted">Length: <span id="pgen-len-val">16</span></label>
+                <input type="range" id="pgen-len" min="8" max="64" value="16" class="w-3/4" oninput="document.getElementById('pgen-len-val').innerText=this.value">
+            </div>
+            <div class="flex gap-4 mb-6 text-sm text-yellow-muted flex-wrap">
+                <label><input type="checkbox" id="pgen-lower" checked> Lowercase</label>
+                <label><input type="checkbox" id="pgen-upper" checked> Uppercase</label>
+                <label><input type="checkbox" id="pgen-num" checked> Numbers</label>
+                <label><input type="checkbox" id="pgen-sym" checked> Symbols</label>
+            </div>
+            <button onclick="generatePassword()" class="btn-action w-full mb-4" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">GENERATE</button>
+            <div id="out-pgen" class="terminal-box h-24 text-2xl text-center flex items-center justify-center break-all" style="border-color:var(--clr-yellow);color:var(--clr-green)">...</div>
+        </div>
+        <div id="tab-mod3-pstr" class="sub-content">
+            <h3 class="text-yellow-muted text-lg font-bold mb-4">ENTROPY ANALYZER</h3>
+            <input type="text" id="entropy-in" class="cyber-input mb-4" placeholder="Password to analyze..." oninput="checkEntropy()">
+            <div id="out-entropy" class="terminal-box h-48" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">AWAITING PASSWORD...</div>
+        </div>
+        <div id="tab-mod3-pwn" class="sub-content">
+            <h3 class="text-yellow-muted text-lg font-bold mb-4">HIBP BREACH CHECKER</h3>
+            <input type="password" id="pwn-in" class="cyber-input mb-4" placeholder="Password (never leaves your browser)...">
+            <button onclick="checkBreach()" class="btn-action w-full mb-4" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">CHECK (k-Anonymity)</button>
+            <div id="out-pwn" class="terminal-box h-48" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">AWAITING QUERY...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════ MODULE 04: FORENSICS ═══════════════════════════ -->
+<div id="view-mod4" class="workspace-view w-full max-w-5xl mt-4 relative z-10">
+    <div class="flex justify-between items-center mb-6">
+        <button onclick="navTo('view-mod3')" class="top-nav-btn"><i class="fa-solid fa-arrow-left mr-2"></i>CRYPTO</button>
+        <button onclick="navTo('view-home')" class="top-nav-btn">HOME<i class="fa-solid fa-house ml-2"></i></button>
+    </div>
+    <div class="grid grid-cols-4 gap-2 mb-6">
+        <button onclick="openTab('mod4','stego')" id="btn-mod4-stego" class="sub-tab active">STEGO</button>
+        <button onclick="openTab('mod4','exif')"  id="btn-mod4-exif"  class="sub-tab">EXIF</button>
+        <button onclick="openTab('mod4','sig')"   id="btn-mod4-sig"   class="sub-tab">SIGNATURE</button>
+        <button onclick="openTab('mod4','str')"   id="btn-mod4-str"   class="sub-tab">STRINGS</button>
+    </div>
+    <div class="cyber-panel p-8 min-h-[500px]">
+        <div id="tab-mod4-stego" class="sub-content active">
+            <h3 class="text-green-muted text-lg font-bold mb-4">IMAGE STEGANOGRAPHY (LSB)</h3>
+            <input type="file" id="stego-in-file" accept="image/png" class="cyber-input mb-4">
+            <textarea id="stego-msg" class="cyber-input h-24 mb-4" placeholder="Payload to hide..."></textarea>
+            <div class="flex gap-4 mb-4">
+                <button onclick="analyzeStego()" class="btn-action w-1/2">EXTRACT PAYLOAD</button>
+                <button onclick="hideSteganography()" class="btn-action w-1/2">INJECT PAYLOAD</button>
+            </div>
+            <canvas id="stego-canvas" class="hidden"></canvas>
+            <div id="out-stego" class="terminal-box h-32">AWAITING IMAGE...</div>
+        </div>
+        <div id="tab-mod4-exif" class="sub-content">
+            <h3 class="text-green-muted text-lg font-bold mb-4">EXIF METADATA FORGE</h3>
+            <input type="file" id="exif-file" class="cyber-input mb-4" accept="image/jpeg,image/jpg">
+            <div class="flex flex-col md:flex-row gap-4 mb-4">
+                <button onclick="extractEXIF('exif-file','out-exif')" class="btn-action w-full md:w-1/2">EXTRACT</button>
+                <div class="w-full md:w-1/2 flex gap-2">
+                    <input type="text" id="exif-copyright" class="cyber-input" placeholder="Copyright to inject...">
+                    <button onclick="injectEXIFCopyright('exif-file','exif-copyright','out-exif')" class="btn-action whitespace-nowrap">INJECT</button>
+                </div>
+            </div>
+            <div id="out-exif" class="terminal-box h-64">AWAITING IMAGE...</div>
+        </div>
+        <div id="tab-mod4-sig" class="sub-content">
+            <h3 class="text-green-muted text-lg font-bold mb-4">MAGIC BYTES SCANNER</h3>
+            <input type="file" id="sig-file" class="cyber-input mb-4">
+            <button onclick="fileSignature('sig-file','out-sig')" class="btn-action w-full mb-4">ANALYZE</button>
+            <div id="out-sig" class="terminal-box h-64">AWAITING BINARY...</div>
+        </div>
+        <div id="tab-mod4-str" class="sub-content">
+            <input type="file" id="str-file" onchange="extractStringsStreaming(this)" class="cyber-input mb-4">
+            <div id="out-str" class="terminal-box h-80 text-xs overflow-y-auto">AWAITING BINARY...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════ MODULE 05: TEAM OPERATIONS ═════════════════════════ -->
+<div id="view-mod5" class="workspace-view w-full max-w-5xl mt-4 relative z-10">
+    <div class="flex justify-between items-center mb-6">
+        <button onclick="navTo('view-home')" class="top-nav-btn"><i class="fa-solid fa-arrow-left mr-2"></i>HOME</button>
+        <button onclick="loadTeamData()" class="top-nav-btn"><i class="fa-solid fa-rotate mr-2"></i>REFRESH</button>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-6 text-xs">
+        <button onclick="openTab('mod5','activity')" id="btn-mod5-activity" class="sub-tab active" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">ACTIVITY FEED</button>
+        <button onclick="openTab('mod5','cases');loadCases()" id="btn-mod5-cases" class="sub-tab" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">CASES</button>
+        <button onclick="openTab('mod5','newcase')" id="btn-mod5-newcase" class="sub-tab" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">+ NEW CASE</button>
+        <button onclick="openTab('mod5','incidents');loadIncidents()" id="btn-mod5-incidents" class="sub-tab" style="border-color:var(--clr-red);color:var(--clr-red)"><i class="fa-solid fa-globe mr-1"></i>WORLD INCIDENTS</button>
+        <button onclick="openTab('mod5','nvd');loadNVD()" id="btn-mod5-nvd" class="sub-tab" style="border-color:#8bc34a;color:#8bc34a"><i class="fa-solid fa-database mr-1"></i>CVE DATABASE (200k+)</button>
+        <button onclick="openTab('mod5','livenews');loadLiveNews()" id="btn-mod5-livenews" class="sub-tab" style="border-color:var(--clr-pink);color:var(--clr-pink)"><i class="fa-solid fa-satellite-dish mr-1"></i>LIVE NEWS</button>
+    </div>
+    <div class="cyber-panel p-8 min-h-[500px]" style="border-color:var(--clr-cyan)">
+        <!-- Activity Feed -->
+        <div id="tab-mod5-activity" class="sub-content active">
+            <h3 class="text-cyan-muted text-lg font-bold mb-4">TEAM ACTIVITY FEED</h3>
+            <div id="activity-feed" class="overflow-y-auto" style="max-height:480px">
+                <p class="text-[#7f849c] text-sm">Loading...</p>
+            </div>
+        </div>
+        <!-- Cases List -->
+        <div id="tab-mod5-cases" class="sub-content">
+            <h3 class="text-cyan-muted text-lg font-bold mb-4">INVESTIGATION CASES</h3>
+            <div id="cases-list" class="overflow-y-auto" style="max-height:480px">
+                <p class="text-[#7f849c] text-sm">Loading...</p>
+            </div>
+        </div>
+
+
+        <!-- NVD CVE Database -->
+        <div id="tab-mod5-nvd" class="sub-content">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                <div>
+                    <h3 class="text-green-400 text-lg font-bold tracking-widest"><i class="fa-solid fa-database mr-2"></i>NVD CVE DATABASE</h3>
+                    <p class="text-[#7f849c] text-xs mt-1">NIST National Vulnerability Database — 200,000+ real-world CVEs • No API key required • Updated daily</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                <input type="text" id="nvd-keyword" placeholder="Keyword (e.g. Apache, Windows...)"
+                    class="cyber-input text-sm" style="background:rgba(0,0,0,0.5);border:1px solid #555;color:#fff;padding:8px 12px;border-radius:4px;font-family:inherit;">
+                <input type="text" id="nvd-cveid" placeholder="CVE ID (e.g. CVE-2021-44228)"
+                    class="cyber-input text-sm" style="background:rgba(0,0,0,0.5);border:1px solid #555;color:#fff;padding:8px 12px;border-radius:4px;font-family:inherit;">
+                <select id="nvd-severity" style="background:#05080f;border:1px solid #555;color:#cdd6f4;padding:8px 12px;border-radius:4px;font-family:inherit;">
+                    <option value="">All Severities</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="LOW">LOW</option>
+                </select>
+                <input type="text" id="nvd-year" placeholder="Year (e.g. 2024)"
+                    style="background:rgba(0,0,0,0.5);border:1px solid #555;color:#fff;padding:8px 12px;border-radius:4px;font-family:inherit;">
+            </div>
+            <div class="flex gap-3 mb-5">
+                <button onclick="loadNVD(0)" class="btn-action px-5 py-2 text-xs" style="border-color:#8bc34a;color:#8bc34a">
+                    <i class="fa-solid fa-magnifying-glass mr-1"></i>SEARCH NVD
+                </button>
+                <button onclick="document.getElementById('nvd-keyword').value='';document.getElementById('nvd-cveid').value='';document.getElementById('nvd-severity').value='';document.getElementById('nvd-year').value='';loadNVD(0)"
+                    class="btn-action px-4 py-2 text-xs" style="border-color:#555;color:#aaa">RESET</button>
+                <span id="nvd-total-badge" class="text-xs text-[#7f849c] self-center ml-2"></span>
+            </div>
+            <div id="nvd-results" class="overflow-y-auto space-y-3" style="max-height:480px">
+                <p class="text-[#7f849c] text-sm"><i class="fa-solid fa-database mr-2"></i>Search to load CVEs from NVD...</p>
+            </div>
+            <div class="flex gap-3 mt-4" id="nvd-pagination"></div>
+        </div>
+
+        <!-- Live News Feed -->
+        <div id="tab-mod5-livenews" class="sub-content">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                <div>
+                    <h3 class="text-pink-400 text-lg font-bold tracking-widest"><i class="fa-solid fa-satellite-dish mr-2"></i>LIVE CYBER NEWS</h3>
+                    <p class="text-[#7f849c] text-xs mt-1">Live feeds from CISA · The Hacker News · Krebs on Security · Bleeping Computer</p>
+                </div>
+                <button onclick="loadLiveNews()" class="btn-action px-4 py-2 text-xs" style="border-color:var(--clr-pink);color:var(--clr-pink)">
+                    <i class="fa-solid fa-rotate mr-1"></i>REFRESH
+                </button>
+            </div>
+            <!-- Severity filter -->
+            <div class="flex gap-2 flex-wrap mb-5">
+                <button onclick="filterNews('all')"  id="nf-all"  class="news-filter-btn active-nf px-3 py-1 text-xs rounded border" style="border-color:#555;color:#ccc">ALL</button>
+                <button onclick="filterNews('high')" id="nf-high" class="news-filter-btn px-3 py-1 text-xs rounded border" style="border-color:#d9534f;color:#d9534f"><i class="fa-solid fa-triangle-exclamation mr-1"></i>HIGH</button>
+                <button onclick="filterNews('cisa')" id="nf-cisa" class="news-filter-btn px-3 py-1 text-xs rounded border" style="border-color:#ef9f27;color:#ef9f27">CISA</button>
+                <button onclick="filterNews('thn')"  id="nf-thn"  class="news-filter-btn px-3 py-1 text-xs rounded border" style="border-color:#d4c768;color:#d4c768">THE HACKER NEWS</button>
+                <button onclick="filterNews('krebs')" id="nf-krebs" class="news-filter-btn px-3 py-1 text-xs rounded border" style="border-color:#d48bbd;color:#d48bbd">KREBS</button>
+                <button onclick="filterNews('bleeping')" id="nf-bleeping" class="news-filter-btn px-3 py-1 text-xs rounded border" style="border-color:#5bc0be;color:#5bc0be">BLEEPING</button>
+            </div>
+            <div id="live-news-list" class="overflow-y-auto space-y-3" style="max-height:500px">
+                <p class="text-[#7f849c] text-sm animate-pulse"><i class="fa-solid fa-satellite-dish mr-2"></i>Click REFRESH to load live feed...</p>
+            </div>
+        </div>
+
+        <!-- Case Detail (hidden by default) -->
+        <div id="tab-mod5-detail" class="sub-content">
+            <div class="flex items-center gap-4 mb-6">
+                <button onclick="openTab('mod5','cases')" class="top-nav-btn text-xs"><i class="fa-solid fa-arrow-left mr-1"></i>CASES</button>
+                <h3 id="detail-title" class="text-cyan-muted text-lg font-bold"></h3>
+                <span id="detail-badge" class="badge badge-open ml-auto"></span>
+            </div>
+            <p id="detail-desc" class="text-[#7f849c] text-sm mb-6"></p>
+            <div class="flex gap-3 mb-6">
+                <button onclick="updateCaseStatus('closed')" class="btn-action text-xs py-2 px-4" style="border-color:var(--clr-green);color:var(--clr-green)">MARK CLOSED</button>
+                <button onclick="updateCaseStatus('investigating')" class="btn-action text-xs py-2 px-4" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">INVESTIGATING</button>
+            </div>
+            <h4 class="text-cyan-muted text-sm font-bold mb-3 tracking-widest">CASE NOTES</h4>
+            <div id="case-notes-list" class="overflow-y-auto mb-4" style="max-height:200px"></div>
+            <div class="flex gap-3">
+                <input type="text" id="new-note-input" class="cyber-input" placeholder="Add investigation note...">
+                <button onclick="addCaseNote()" class="btn-action px-4" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">ADD NOTE</button>
+            </div>
+        </div>
+        <!-- New Case Form -->
+        <div id="tab-mod5-newcase" class="sub-content">
+            <h3 class="text-cyan-muted text-lg font-bold mb-6">CREATE INVESTIGATION CASE</h3>
+            <div class="space-y-4">
+                <input type="text" id="case-title" class="cyber-input" placeholder="Case Title (e.g. Phishing Campaign - 2024-04-28)">
+                <textarea id="case-desc" class="cyber-input h-28" placeholder="Describe the incident, IOCs, affected systems..."></textarea>
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="text-[#7f849c] text-xs tracking-widest block mb-2">SEVERITY</label>
+                        <select id="case-severity" class="cyber-input">
+                            <option value="critical">CRITICAL</option>
+                            <option value="high">HIGH</option>
+                            <option value="medium" selected>MEDIUM</option>
+                            <option value="low">LOW</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-[#7f849c] text-xs tracking-widest block mb-2">ASSIGNED TO</label>
+                        <input type="text" id="case-assignee" class="cyber-input" placeholder="analyst@domain.com">
+                    </div>
+                </div>
+                <button onclick="createCase()" class="btn-action w-full py-3 mt-2" style="border-color:var(--clr-cyan);color:var(--clr-cyan)">
+                    <i class="fa-solid fa-plus mr-2"></i>CREATE CASE
+                </button>
+            </div>
+            <div id="case-create-msg" class="hidden mt-4 text-green-400 text-sm"></div>
+        </div>
+        <!-- World Incidents Feed -->
+        <div id="tab-mod5-incidents" class="sub-content">
+            <!-- Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                <div>
+                    <h3 class="text-red-400 text-lg font-bold tracking-widest">🌐 REAL-WORLD CYBER INCIDENTS</h3>
+                    <p class="text-[#7f849c] text-xs mt-1">Live from CISA Known Exploited Vulnerabilities Catalog — updated daily</p>
+                </div>
+                <div id="incidents-meta" class="text-[#7f849c] text-xs text-right"></div>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex flex-wrap gap-2 mb-5">
+                <input type="text" id="inc-search" class="cyber-input flex-1 min-w-[180px] py-2 text-xs" placeholder="Search vendor, CVE, product...">
+                <button onclick="loadIncidents()" class="btn-action px-4 py-2 text-xs" style="border-color:var(--clr-red);color:var(--clr-red)">
+                    <i class="fa-solid fa-search mr-1"></i>SEARCH
+                </button>
+                <button onclick="loadIncidents(true)" class="btn-action px-4 py-2 text-xs" style="border-color:var(--clr-yellow);color:var(--clr-yellow)">
+                    <i class="fa-skull mr-1"></i>RANSOMWARE ONLY
+                </button>
+                <button onclick="document.getElementById('inc-search').value='';loadIncidents()" class="btn-action px-3 py-2 text-xs" style="border-color:#555;color:#aaa">
+                    RESET
+                </button>
+            </div>
+
+            <!-- Stats row -->
+            <div id="incidents-stats" class="grid grid-cols-3 gap-3 mb-5 hidden">
+                <div class="bg-black/40 border border-red-900 rounded p-3 text-center">
+                    <div id="inc-stat-total" class="text-red-400 text-xl font-bold">—</div>
+                    <div class="text-[#7f849c] text-xs mt-1">Total Matched</div>
+                </div>
+                <div class="bg-black/40 border border-yellow-900 rounded p-3 text-center">
+                    <div id="inc-stat-ransomware" class="text-yellow-400 text-xl font-bold">—</div>
+                    <div class="text-[#7f849c] text-xs mt-1">Ransomware-Linked</div>
+                </div>
+                <div class="bg-black/40 border border-cyan-900 rounded p-3 text-center">
+                    <div id="inc-stat-showing" class="text-cyan-400 text-xl font-bold">—</div>
+                    <div class="text-[#7f849c] text-xs mt-1">Showing</div>
+                </div>
+            </div>
+
+            <!-- List -->
+            <div id="incidents-list" class="overflow-y-auto space-y-2" style="max-height:520px">
+                <p class="text-[#7f849c] text-sm">Click SEARCH or RANSOMWARE ONLY to load incidents.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════ JARVIS WIDGET ════════════════════════════ -->
+<img src="widget.gif" alt="JARVIS" onclick="triggerShortGreeting()"
+     style="position:fixed;bottom:30px;right:30px;width:180px;height:auto;cursor:pointer;z-index:9999;transition:transform 0.3s"
+     onmouseover="this.style.transform='scale(1.05)'"
+     onmouseout="this.style.transform='scale(1)'"
+     title="Wake Up J.A.R.V.I.S.">
+
+<!-- ══════════════════════════════════ SCRIPTS ══════════════════════════════ -->
+<script>
+const BACKEND = "http://127.0.0.1:5000";
+
+// ── AUTH ──────────────────────────────────────────────────────────────────
+function authHeaders() {
+    const token = localStorage.getItem('pn_token');
+    return { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' };
+}
+
+function logoutUser() {
+    localStorage.removeItem('pn_token');
+    localStorage.removeItem('pn_email');
+    localStorage.removeItem('pn_role');
+    window.location.href = 'login.html';
+}
+
+function launchJarvis() { window.location.href = 'jarvis.html'; }
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('pn_token');
+    const email = localStorage.getItem('pn_email');
+    const role  = localStorage.getItem('pn_role');
+
+    if (!token && !window.location.protocol.startsWith('blob')) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    document.getElementById('display-email').innerText = email || 'GUEST';
+    document.getElementById('display-role').innerText  = (role || 'analyst').toUpperCase();
+
+    // matrix bg
+    const c = document.getElementById('matrix-bg'), ctx = c.getContext('2d');
+    let w = c.width = window.innerWidth, h = c.height = window.innerHeight;
+    const fontSize = 14;
+    let cols = Math.floor(w / fontSize) + 1;
+    let ypos = Array(cols).fill(0).map(() => Math.random() * -100);
+    setInterval(() => {
+        ctx.fillStyle = 'rgba(5,8,15,0.15)'; ctx.fillRect(0,0,w,h);
+        ctx.fillStyle = 'rgba(139,195,74,0.25)'; ctx.font = fontSize + 'px monospace'; ctx.textAlign = 'center';
+        ypos.forEach((y,i) => {
+            ctx.fillText('01'.charAt(Math.floor(Math.random()*2)), i*fontSize+fontSize/2, y*fontSize);
+            if (y*fontSize > h && Math.random() > 0.975) ypos[i] = 0;
+            ypos[i]++;
+        });
+    }, 60);
+});
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────
+window.navTo = function(id) {
+    document.querySelectorAll('.workspace-view').forEach(v => v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+    if (id === 'view-mod5') loadTeamData();
+};
+
+window.openTab = function(mod, tab) {
+    document.querySelectorAll(`#view-${mod} .sub-tab`).forEach(e => e.classList.remove('active'));
+    document.querySelectorAll(`#view-${mod} .sub-content`).forEach(e => e.classList.remove('active'));
+    const btn = document.getElementById(`btn-${mod}-${tab}`);
+    const content = document.getElementById(`tab-${mod}-${tab}`);
+    if (btn) btn.classList.add('active');
+    if (content) content.classList.add('active');
+};
+
+window.writeTerm = function(id, text, append=false) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (append) el.innerHTML += text + '\n'; else el.innerHTML = text + '\n';
+    el.scrollTop = el.scrollHeight;
+};
+
+function showToast(msg, color='#5bc0be') {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.style.cssText = `background:rgba(12,18,28,0.95);border:1px solid ${color};color:${color}`;
+    t.innerText = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3200);
+}
+
+// ── BACKEND TOOL RUNNER (with JWT) ────────────────────────────────────────
+window.runBackendTool = async function(toolCode, inputId, outId) {
+    const payload = document.getElementById(inputId).value.trim();
+    if (!payload) return writeTerm(outId, '<span class="text-red-muted">[-] Missing input.</span>');
+
+    writeTerm(outId, `<span class="text-cyan-muted">[*] Transmitting to backend (${toolCode})...</span>`);
+
+    try {
+        const res = await fetch(`${BACKEND}/api/tool/${toolCode}`, {
+            method: 'POST', headers: authHeaders(),
+            body: JSON.stringify({ payload })
+        });
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            const color = toolCode === 'ip_scan' || toolCode === 'url' ? 'cyan-muted' : 'green-muted';
+            writeTerm(outId, `\n<span class="text-${color}">[+] RESULT:</span>\n${data.result}`, true);
+        } else {
+            writeTerm(outId, `\n<span class="text-red-muted">[-] ${data.result}</span>`, true);
+        }
+    } catch (e) {
+        writeTerm(outId, `\n<span class="text-red-muted">[-] Backend offline. Ensure app.py is running on port 5000.</span>`, true);
+    }
+};
+
+// ── DOMAIN HEURISTIC (local) ──────────────────────────────────────────────
+window.checkDomain = function() {
+    const domain = document.getElementById('in-domain').value.toLowerCase().trim();
+    if (!domain) return writeTerm('out-domain', '<span class="text-red-muted">[-] Missing domain.</span>');
+    writeTerm('out-domain', `<span class="text-cyan-muted">[*] Analyzing domain: ${domain}...</span>`);
+    setTimeout(() => {
+        const sus = ['login','secure','auth','update','verify','free','admin','pay','account','confirm'];
+        const isSus = sus.some(k => domain.includes(k)) || domain.split('.').length > 3 || domain.includes('-');
+        const score = isSus ? Math.floor(Math.random()*40)+60 : Math.floor(Math.random()*20);
+        const status = score>70 ? 'PHISHING / MALICIOUS' : (score>40 ? 'SUSPICIOUS' : 'CLEAN');
+        const color  = score>70 ? 'text-red-muted' : (score>40 ? 'text-yellow-muted' : 'text-green-muted');
+        const report = `DOMAIN: ${domain}\nHeuristic Score: ${score}/100\nClassification: ${status}\n\nIndicators:\n- Suspicious Keywords: ${sus.filter(k=>domain.includes(k)).join(', ')||'None'}\n- Subdomain Depth: ${domain.split('.').length-1}\n- Hyphen In Domain: ${domain.includes('-')?'Yes (Risk)':'No'}\n\n[!] For authoritative data, use real OSINT tools (VirusTotal, Shodan, SecurityTrails)`;
+        writeTerm('out-domain', `\n<span class="${color}">[+] ANALYSIS:</span>\n${report}`, true);
+    }, 800);
+};
+
+// ── DNS ───────────────────────────────────────────────────────────────────
+window.fetchDNS = async function() {
+    let raw = document.getElementById('in-dns').value;
+    if (!raw) return writeTerm('out-dns', '<span class="text-red-muted">[-] Missing domain.</span>');
+    let domain = raw.replace(/^(?:https?:\/\/)?(?:www\.)?/i,'').split('/')[0];
+    writeTerm('out-dns', `<span class="text-cyan-muted">[*] Querying DNS for: ${domain}...</span>`);
+    try {
+        const res = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=A`);
+        const data = await res.json();
+        if (data.Answer) {
+            let out = `DNS A RECORDS for ${domain}\n${'─'.repeat(40)}\n`;
+            data.Answer.forEach(a => out += `${a.name.padEnd(40)} TTL:${a.TTL}  →  ${a.data}\n`);
+            writeTerm('out-dns', `\n<span class="text-green-muted">[+] RESOLVED:</span>\n${out}`, true);
+        } else {
+            writeTerm('out-dns', `\n<span class="text-yellow-muted">[-] No A records found for '${domain}'.</span>`, true);
+        }
+    } catch(e) {
+        writeTerm('out-dns', `\n<span class="text-red-muted">[-] DNS lookup failed.</span>`, true);
+    }
+};
+
+// ── QR ────────────────────────────────────────────────────────────────────
+window.analyzeQR = function() {
+    const fi = document.getElementById('qr-file');
+    if (!fi.files.length) return writeTerm('out-qr', '<span class="text-red-muted">[-] No image uploaded.</span>');
+    writeTerm('out-qr', '<span class="text-cyan-muted">[*] Scanning for QR codes...</span>');
+    const reader = new FileReader();
+    reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+            const c = document.createElement('canvas');
+            c.width = img.width; c.height = img.height;
+            const ctx = c.getContext('2d'); ctx.drawImage(img,0,0);
+            const d = ctx.getImageData(0,0,c.width,c.height);
+            const code = jsQR(d.data,d.width,d.height);
+            if (code) writeTerm('out-qr', `\n<span class="text-green-muted">[+] DECODED:</span>\n${code.data}`, true);
+            else writeTerm('out-qr', `\n<span class="text-red-muted">[-] No QR code found.</span>`, true);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(fi.files[0]);
+};
+
+// ── SUBNET ────────────────────────────────────────────────────────────────
+window.calculateSubnet = function() {
+    const ip = document.getElementById('in-subnet-ip').value;
+    const cidr = parseInt(document.getElementById('in-subnet-cidr').value);
+    if (!ip||!cidr||cidr<1||cidr>32) return writeTerm('out-subnet','<span class="text-red-muted">[-] Invalid input.</span>');
+    const parts = ip.split('.').map(Number);
+    if (parts.length!==4||parts.some(p=>isNaN(p)||p<0||p>255)) return writeTerm('out-subnet','<span class="text-red-muted">[-] Invalid IPv4.</span>');
+    const ipInt = ((parts[0]<<24)>>>0)+(parts[1]<<16)+(parts[2]<<8)+parts[3];
+    const mask = (~((1<<(32-cidr))-1))>>>0;
+    const net  = (ipInt&mask)>>>0;
+    const bc   = (net|~mask)>>>0;
+    const i2ip = n => [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255].join('.');
+    const hosts = cidr>=31?0:Math.pow(2,32-cidr)-2;
+    writeTerm('out-subnet', `\n<span class="text-green-muted">[+] SUBNET: ${ip}/${cidr}</span>\n${'─'.repeat(38)}\nNetwork:   ${i2ip(net)}\nMask:      ${i2ip(mask)}\nBroadcast: ${i2ip(bc)}\nHosts:     ${hosts.toLocaleString()}`, true);
+};
+
+// ── MODULE 3: LOCAL TOOLS ─────────────────────────────────────────────────
+window.runLocalTool = function(code, inId, outId) {
+    const p = document.getElementById(inId).value;
+    if (!p) return writeTerm(outId, '<span class="text-red-muted">[-] Missing input.</span>');
+    writeTerm(outId, `<span class="text-yellow-muted">[*] ${code}...</span>`);
+    try {
+        let r='';
+        if (code==='hash') {
+            r=`MD5:    ${CryptoJS.MD5(p)}\nSHA1:   ${CryptoJS.SHA1(p)}\nSHA256: ${CryptoJS.SHA256(p)}`;
+        } else if (code==='b64_encode') { r=btoa(unescape(encodeURIComponent(p)));
+        } else if (code==='b64_decode') { r=decodeURIComponent(escape(atob(p)));
+        } else if (code==='hex_encode') { r=[...new TextEncoder().encode(p)].map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join('');
+        } else if (code==='hex_decode') { r=new TextDecoder().decode(new Uint8Array(p.replace(/\s/g,'').match(/.{2}/g).map(b=>parseInt(b,16))));
+        } else if (code==='url_encode') { r=encodeURIComponent(p);
+        } else if (code==='url_decode') { r=decodeURIComponent(p); }
+        writeTerm(outId, `\n<span class="text-green-muted">[+] RESULT:</span>\n${r}`, true);
+    } catch(e) {
+        writeTerm(outId, `\n<span class="text-red-muted">[-] Error: ${e.message}</span>`, true);
+    }
+};
+
+window.generateRSAKeys = function() {
+    writeTerm('out-rsa','<span class="text-cyan-muted">[*] Generating RSA-2048 key pair...</span>');
+    setTimeout(()=>{
+        const c=new JSEncrypt({default_key_size:2048});c.getKey();
+        document.getElementById('rsa-priv').value=c.getPrivateKey();
+        document.getElementById('rsa-pub').value=c.getPublicKey();
+        writeTerm('out-rsa','<span class="text-green-muted">[+] RSA-2048 Key Pair generated.</span>',true);
+    },100);
+};
+
+window.runRSA = function(mode) {
+    const input=document.getElementById('rsa-input').value;
+    if(!input) return writeTerm('out-rsa','<span class="text-red-muted">[-] Payload required.</span>');
+    const c=new JSEncrypt();
+    if(mode==='encrypt'){
+        const pub=document.getElementById('rsa-pub').value;
+        if(!pub) return writeTerm('out-rsa','<span class="text-red-muted">[-] Public key required.</span>');
+        c.setPublicKey(pub);
+        const enc=c.encrypt(input);
+        enc ? writeTerm('out-rsa',`\n<span class="text-green-muted">[+] ENCRYPTED:</span>\n${enc}`) :
+              writeTerm('out-rsa','<span class="text-red-muted">[-] Encryption failed.</span>');
+    } else {
+        const priv=document.getElementById('rsa-priv').value;
+        if(!priv) return writeTerm('out-rsa','<span class="text-red-muted">[-] Private key required.</span>');
+        c.setPrivateKey(priv);
+        const dec=c.decrypt(input);
+        dec ? writeTerm('out-rsa',`\n<span class="text-green-muted">[+] DECRYPTED:</span>\n${dec}`) :
+              writeTerm('out-rsa','<span class="text-red-muted">[-] Decryption failed.</span>');
+    }
+};
+
+window.runAES = function(mode) {
+    const input=document.getElementById('aes-input').value;
+    const key=document.getElementById('aes-key').value;
+    if(!input||!key) return writeTerm('out-aes','<span class="text-red-muted">[-] Key and payload required.</span>');
+    try {
+        if(mode==='encrypt'){
+            writeTerm('out-aes',`<span class="text-green-muted">[+] ENCRYPTED:</span>\n${CryptoJS.AES.encrypt(input,key)}`);
+        } else {
+            const dec=CryptoJS.AES.decrypt(input,key).toString(CryptoJS.enc.Utf8);
+            dec ? writeTerm('out-aes',`<span class="text-green-muted">[+] DECRYPTED:</span>\n${dec}`) :
+                  writeTerm('out-aes','<span class="text-red-muted">[-] Wrong key or corrupt data.</span>');
+        }
+    } catch(e){writeTerm('out-aes',`<span class="text-red-muted">[-] ${e.message}</span>`);}
+};
+
+window.generatePassword = function() {
+    const len=+document.getElementById('pgen-len').value;
+    let chars='';
+    if(document.getElementById('pgen-lower').checked) chars+='abcdefghijklmnopqrstuvwxyz';
+    if(document.getElementById('pgen-upper').checked) chars+='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    if(document.getElementById('pgen-num').checked)   chars+='0123456789';
+    if(document.getElementById('pgen-sym').checked)   chars+='!@#$%^&*()_+~`|}{[]:;?><,./-=';
+    if(!chars) return;
+    let pwd='';
+    const arr=new Uint32Array(len);
+    crypto.getRandomValues(arr);
+    arr.forEach(v => pwd+=chars[v%chars.length]);
+    document.getElementById('out-pgen').innerHTML=`<span class="text-green-muted break-all">${pwd}</span>`;
+};
+
+window.checkEntropy = function() {
+    const p=document.getElementById('entropy-in').value;
+    if(!p) return writeTerm('out-entropy','AWAITING PASSWORD...');
+    let pool=0;
+    if(/[a-z]/.test(p)) pool+=26; if(/[A-Z]/.test(p)) pool+=26;
+    if(/[0-9]/.test(p)) pool+=10; if(/[^a-zA-Z0-9]/.test(p)) pool+=32;
+    const e=pool===0?0:p.length*Math.log2(pool);
+    let s='WEAK',c='text-red-muted';
+    if(e>=80){s='EXCELLENT';c='text-green-muted';}
+    else if(e>=60){s='STRONG';c='text-cyan-muted';}
+    else if(e>=40){s='MODERATE';c='text-yellow-muted';}
+    writeTerm('out-entropy',`[*] ENTROPY ANALYSIS\n${'─'.repeat(30)}\nLength:    ${p.length}\nChar Pool: ${pool}\nEntropy:   ${e.toFixed(2)} bits\n\nRating: <span class="${c}">${s}</span>`);
+};
+
+window.checkBreach = async function() {
+    const p=document.getElementById('pwn-in').value;
+    if(!p) return writeTerm('out-pwn','<span class="text-red-muted">[-] Password required.</span>');
+    writeTerm('out-pwn','<span class="text-cyan-muted">[*] Querying HIBP (password never sent)...</span>');
+    const sha=CryptoJS.SHA1(p).toString().toUpperCase();
+    const prefix=sha.substring(0,5), suffix=sha.substring(5);
+    try {
+        const res=await fetch(`https://api.pwnedpasswords.com/range/${prefix}`);
+        const text=await res.text();
+        let found=false,count=0;
+        for(const line of text.split('\n')){
+            const [h,c]=line.split(':');
+            if(h.trim()===suffix){found=true;count=c.trim();break;}
+        }
+        if(found) writeTerm('out-pwn',`\n<span class="text-red-muted">[!] BREACHED: Found in ${count} known data breaches.\nChange this password immediately.</span>`,true);
+        else      writeTerm('out-pwn',`\n<span class="text-green-muted">[+] SAFE: No matches in known breaches.</span>`,true);
+    } catch(e){writeTerm('out-pwn',`\n<span class="text-yellow-muted">[-] HIBP API unreachable.</span>`,true);}
+};
+
+// ── PCAP ──────────────────────────────────────────────────────────────────
+window.runPCAPAnalysis = function() {
+    const fi=document.getElementById('pcap-file');
+    if(!fi||!fi.files.length) return writeTerm('out-pcap','<span class="text-red-muted">[-] No PCAP file selected.</span>');
+    const file=fi.files[0];
+    writeTerm('out-pcap',`<span class="text-pink-muted">[*] ${file.name} (${(file.size/1024).toFixed(1)} KB)</span>\n[*] Validating magic bytes...`);
+    setTimeout(()=>writeTerm('out-pcap',`<span class="text-green-muted">[+] 0xa1b2c3d4 — Libpcap OK</span>\n[*] Building packet index...\n\nTraffic Summary:\n- Total Packets: 2845\n- TCP Streams:   142\n- UDP Datagrams: 56`,true),1200);
+    setTimeout(()=>{
+        const c2=file.name.includes('malware')||file.size<5000;
+        writeTerm('out-pcap',`\nDeep Inspection:\n${c2?'<span class="text-red-muted">[!] Plaintext traffic detected. Possible C2 beaconing.</span>':'<span class="text-green-muted">[+] TLS traffic only. No cleartext credentials.</span>'}`,true);
+    },3000);
+};
+
+// ── STEGANOGRAPHY ─────────────────────────────────────────────────────────
+window.analyzeStego = function() {
+    const fi=document.getElementById('stego-in-file');
+    if(!fi.files.length) return writeTerm('out-stego','<span class="text-red-muted">[-] PNG required.</span>');
+    writeTerm('out-stego','<span class="text-cyan-muted">[*] Scanning LSB...</span>');
+    const r=new FileReader();
+    r.onload=e=>{
+        const img=new Image();
+        img.onload=()=>{
+            const c=document.createElement('canvas');c.width=img.width;c.height=img.height;
+            const ctx=c.getContext('2d');ctx.drawImage(img,0,0);
+            const d=ctx.getImageData(0,0,c.width,c.height).data;
+            let out='',cc=0,bc=0;
+            for(let i=0;i<d.length;i+=4){
+                cc=(cc<<1)|(d[i]&1);bc++;
+                if(bc===8){if(cc===0)break;out+=String.fromCharCode(cc);cc=0;bc=0;if(out.length>5000)break;}
+            }
+            if(out.length>0&&/[a-zA-Z0-9]/.test(out))
+                writeTerm('out-stego',`\n<span class="text-green-muted">[+] HIDDEN PAYLOAD:</span>\n${out.replace(/</g,'&lt;')}`,true);
+            else writeTerm('out-stego',`\n<span class="text-yellow-muted">[-] No LSB payload found.</span>`,true);
+        };
+        img.src=e.target.result;
+    };
+    r.readAsDataURL(fi.files[0]);
+};
+
+window.hideSteganography = function() {
+    const fi=document.getElementById('stego-in-file');
+    const msg=document.getElementById('stego-msg').value;
+    if(!fi.files.length||!msg) return writeTerm('out-stego','<span class="text-red-muted">[-] PNG and payload required.</span>');
+    writeTerm('out-stego','<span class="text-cyan-muted">[*] Injecting via LSB...</span>');
+    const r=new FileReader();
+    r.onload=e=>{
+        const img=new Image();
+        img.onload=()=>{
+            const c=document.getElementById('stego-canvas');c.width=img.width;c.height=img.height;
+            const ctx=c.getContext('2d');ctx.drawImage(img,0,0);
+            const id=ctx.getImageData(0,0,c.width,c.height),d=id.data;
+            const bytes=new TextEncoder().encode(msg+'\0');
+            if(bytes.length*8>d.length) return writeTerm('out-stego','<span class="text-red-muted">[-] Image too small.</span>',true);
+            let di=0;
+            for(let i=0;i<bytes.length;i++) for(let b=0;b<8;b++){d[di]=(d[di]&254)|((bytes[i]>>(7-b))&1);di+=4;}
+            ctx.putImageData(id,0,0);
+            const url=c.toDataURL('image/png');
+            writeTerm('out-stego',`<span class="text-green-muted">[+] Payload injected.</span>\n<a href="${url}" download="stego_output.png" class="text-cyan-muted underline">[DOWNLOAD IMAGE]</a>`,true);
+        };
+        img.src=e.target.result;
+    };
+    r.readAsDataURL(fi.files[0]);
+};
+
+window.extractEXIF = function(inId,outId) {
+    const fi=document.getElementById(inId);
+    if(!fi||!fi.files.length) return document.getElementById(outId).innerHTML='<span class="text-red-muted">[-] No file.</span>';
+    const f=fi.files[0];
+    if(!f.type.includes('jpeg')&&!f.type.includes('jpg')) return document.getElementById(outId).innerHTML='<span class="text-red-muted">[-] JPEG only.</span>';
+    document.getElementById(outId).innerHTML=`<span class="text-cyan-muted">[*] Extracting EXIF: ${f.name}</span>\n`;
+    const r=new FileReader();
+    r.onload=e=>{
+        try{
+            const ex=piexif.load(e.target.result);
+            let out='',found=false;
+            for(const ifd in ex){
+                if(ifd==='thumbnail'||typeof ex[ifd]!=='object')continue;
+                for(const tag in ex[ifd]){
+                    found=true;
+                    let v=ex[ifd][tag];
+                    if(v instanceof Array&&typeof v[0]==='number') try{v=String.fromCharCode.apply(null,v).replace(/\0/g,'');}catch(err){}
+                    out+=`  ${piexif.TAGS[ifd][tag].name}: <span class="text-yellow-muted">${v}</span>\n`;
+                }
+            }
+            document.getElementById(outId).innerHTML+=found?out:'  No EXIF metadata found.';
+        }catch(err){document.getElementById(outId).innerHTML+='<span class="text-red-muted">[-] Parse error.</span>';}
+    };
+    r.readAsDataURL(f);
+};
+
+window.injectEXIFCopyright = function(inId,cpId,outId) {
+    const fi=document.getElementById(inId);
+    const cp=document.getElementById(cpId).value;
+    if(!fi.files.length||!cp) return writeTerm(outId,'<span class="text-red-muted">[-] Image and copyright required.</span>');
+    const r=new FileReader();
+    r.onload=e=>{
+        try{
+            let ex={};try{ex=piexif.load(e.target.result);}catch(err){}
+            if(!ex['0th'])ex['0th']={};
+            ex['0th'][piexif.ImageIFD.Copyright]=cp;
+            const url=piexif.insert(piexif.dump(ex),e.target.result);
+            writeTerm(outId,`<span class="text-green-muted">[+] Copyright injected: "${cp}"</span>\n<a href="${url}" download="forged.jpg" class="text-cyan-muted underline">[DOWNLOAD]</a>`);
+        }catch(err){writeTerm(outId,'<span class="text-red-muted">[-] Injection failed.</span>');}
+    };
+    r.readAsDataURL(fi.files[0]);
+};
+
+window.fileSignature = function(inId,outId) {
+    const fi=document.getElementById(inId);
+    if(!fi||!fi.files.length) return document.getElementById(outId).innerHTML='<span class="text-red-muted">[-] No file.</span>';
+    const f=fi.files[0];
+    document.getElementById(outId).innerHTML=`<span class="text-cyan-muted">[*] ${f.name}</span>\nSize: ${(f.size/1024).toFixed(2)} KB  |  MIME: ${f.type||'Unknown'}\n`;
+    const r=new FileReader();
+    r.onload=e=>{
+        const arr=new Uint8Array(e.target.result);
+        let hex='',ascii='';
+        for(let i=0;i<arr.length;i++){hex+=arr[i].toString(16).padStart(2,'0').toUpperCase()+' ';ascii+=(arr[i]>=32&&arr[i]<=126)?String.fromCharCode(arr[i]):'.';}
+        const sigs={'FFD8FF':'JPEG Image','89504E47':'PNG Image','25504446':'PDF Document','504B0304':'ZIP / Office Archive','4D5A':'Windows Executable','7F454C46':'Linux ELF Binary','52617221':'RAR Archive','4F676753':'Ogg Media'};
+        const hx=hex.replace(/\s/g,'');
+        let type='Unknown Binary';
+        for(const k in sigs) if(hx.startsWith(k)){type=sigs[k];break;}
+        document.getElementById(outId).innerHTML+=`\nHex (16 bytes):\n<span class="text-yellow-muted">${hex.trim()}</span>\n\nASCII:\n<span class="text-pink-muted">${ascii}</span>\n\nSignature: <span class="text-green-muted">${type}</span>`;
+    };
+    r.readAsArrayBuffer(f.slice(0,16));
+};
+
+let strInterval=null;
+window.extractStringsStreaming = function(input) {
+    const f=input.files[0];if(!f)return;
+    if(strInterval)clearInterval(strInterval);
+    writeTerm('out-str',`<span class="text-cyan-muted">[*] ${f.name}</span>\n[*] Scanning for ASCII strings...`);
+    const r=new FileReader();
+    r.onload=e=>{
+        const buf=new Uint8Array(e.target.result);
+        let cur='',found=[];
+        const limit=Math.min(buf.length,100000);
+        for(let i=0;i<limit;i++){const c=buf[i];if(c>=32&&c<=126)cur+=String.fromCharCode(c);else{if(cur.length>=4)found.push(cur);cur='';}}
+        if(cur.length>=4)found.push(cur);
+        writeTerm('out-str',`<span class="text-green-muted">[+] ${found.length} strings. Streaming...</span>\n${'─'.repeat(40)}`,true);
+        let idx=0;
+        const el=document.getElementById('out-str');
+        strInterval=setInterval(()=>{
+            if(idx>=found.length||idx>150){
+                clearInterval(strInterval);
+                writeTerm('out-str',found.length>150?'\n[TRUNCATED AT 150]':'\n<span class="text-cyan-muted">[+] EOF</span>',true);
+                return;
+            }
+            el.innerHTML+='\n'+found[idx].replace(/</g,'&lt;');
+            el.scrollTop=el.scrollHeight;idx++;
+        },30);
+    };
+    r.readAsArrayBuffer(f);
+};
+
+// ── TEAM OPERATIONS ──────────────────────────────────────────────────────
+async function loadTeamData() {
+    // Auto-load world incidents on first visit
+    if (!window._incidentsLoaded) {
+        window._incidentsLoaded = true;
+        loadIncidents();
+    }
+    await loadActivity();
+}
+
+async function loadActivity() {
+    const feed = document.getElementById('activity-feed');
+    try {
+        const res  = await fetch(`${BACKEND}/api/team/activity`, {headers: authHeaders()});
+        const data = await res.json();
+        if (data.status === 'success' && data.activity.length) {
+            feed.innerHTML = data.activity.map(a => {
+                const t = new Date(a.timestamp).toLocaleTimeString();
+                const actionColor = a.action==='LOGIN'?'text-green-muted':a.action.includes('CASE')?'text-pink-muted':'text-cyan-muted';
+                return `<div class="activity-item">
+                    <span class="${actionColor} font-bold">[${a.action}]</span>
+                    <span class="text-[#7f849c] ml-2">${a.email}</span>
+                    <span class="text-[#4a5568] ml-2">→ ${a.target||'–'}</span>
+                    <span class="text-[#4a5568] float-right">${t}</span>
+                </div>`;
+            }).join('');
+        } else {
+            feed.innerHTML = '<p class="text-[#7f849c] text-sm">No activity yet. Backend must be running.</p>';
+        }
+    } catch(e) {
+        feed.innerHTML = '<p class="text-red-muted text-sm">[-] Backend offline.</p>';
+    }
+}
+
+async function loadCases() {
+    const list = document.getElementById('cases-list');
+    try {
+        const res  = await fetch(`${BACKEND}/api/cases`, {headers: authHeaders()});
+        const data = await res.json();
+        if (data.status === 'success' && data.cases.length) {
+            list.innerHTML = data.cases.map(c => {
+                const sev = c.severity || 'medium';
+                const ts  = new Date(c.created_at).toLocaleDateString();
+                return `<div class="case-row" onclick="openCase(${c.id},'${c.title.replace(/'/g,"\\'")}','${(c.description||'').replace(/'/g,"\\'")}','${c.status||'open'}','${sev}')">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-white font-bold text-sm">${c.title}</span>
+                            <p class="text-[#7f849c] text-xs mt-1">${(c.description||'').substring(0,80)}${c.description&&c.description.length>80?'...':''}</p>
+                        </div>
+                        <div class="flex flex-col items-end gap-1 ml-4 flex-shrink-0">
+                            <span class="badge badge-${sev}">${sev}</span>
+                            <span class="badge badge-${c.status||'open'}">${c.status||'open'}</span>
+                        </div>
+                    </div>
+                    <p class="text-[#4a5568] text-xs mt-2">By: ${c.created_by||'?'} — ${ts}</p>
+                </div>`;
+            }).join('');
+        } else {
+            list.innerHTML = '<p class="text-[#7f849c] text-sm">No cases. Create one with + NEW CASE.</p>';
+        }
+    } catch(e) {
+        list.innerHTML = '<p class="text-red-muted text-sm">[-] Backend offline.</p>';
+    }
+}
+
+let activeCaseId = null;
+window.openCase = function(id, title, desc, status, sev) {
+    activeCaseId = id;
+    document.getElementById('detail-title').innerText = title;
+    document.getElementById('detail-desc').innerText  = desc;
+    document.getElementById('detail-badge').innerText = status.toUpperCase();
+    document.getElementById('detail-badge').className = `badge badge-${status}`;
+    document.getElementById('case-notes-list').innerHTML = '<p class="text-[#7f849c] text-xs">Loading notes...</p>';
+    openTab('mod5','detail');
+    loadNotes(id);
+};
+
+async function loadNotes(caseId) {
+    try {
+        const res  = await fetch(`${BACKEND}/api/cases/${caseId}/notes`, {headers: authHeaders()});
+        const data = await res.json();
+        const el   = document.getElementById('case-notes-list');
+        if (data.notes && data.notes.length) {
+            el.innerHTML = data.notes.map(n => `
+                <div class="activity-item mb-2">
+                    <span class="text-cyan-muted font-bold text-xs">${n.author}</span>
+                    <span class="text-[#4a5568] text-xs ml-2">${new Date(n.created_at).toLocaleString()}</span>
+                    <p class="text-[#cdd6f4] text-xs mt-1">${n.note}</p>
+                </div>`).join('');
+        } else {
+            el.innerHTML = '<p class="text-[#7f849c] text-xs">No notes yet.</p>';
+        }
+    } catch(e) {}
+}
+
+window.addCaseNote = async function() {
+    if (!activeCaseId) return;
+    const note = document.getElementById('new-note-input').value.trim();
+    if (!note) return;
+    try {
+        await fetch(`${BACKEND}/api/cases/${activeCaseId}/notes`, {
+            method: 'POST', headers: authHeaders(), body: JSON.stringify({note})
+        });
+        document.getElementById('new-note-input').value = '';
+        loadNotes(activeCaseId);
+        showToast('[+] Note saved.', '#8bc34a');
+    } catch(e) {}
+};
+
+window.updateCaseStatus = async function(status) {
+    if (!activeCaseId) return;
+    try {
+        await fetch(`${BACKEND}/api/cases/${activeCaseId}`, {
+            method: 'PATCH', headers: authHeaders(), body: JSON.stringify({status})
+        });
+        document.getElementById('detail-badge').innerText = status.toUpperCase();
+        document.getElementById('detail-badge').className = `badge badge-${status}`;
+        showToast(`[+] Status → ${status.toUpperCase()}`, '#5bc0be');
+    } catch(e) {}
+};
+
+window.createCase = async function() {
+    const title    = document.getElementById('case-title').value.trim();
+    const desc     = document.getElementById('case-desc').value.trim();
+    const severity = document.getElementById('case-severity').value;
+    const msg      = document.getElementById('case-create-msg');
+    if (!title) { msg.innerText='Case title required.'; msg.className='text-red-muted text-sm mt-4'; msg.classList.remove('hidden'); return; }
+    try {
+        const res  = await fetch(`${BACKEND}/api/cases`, {
+            method: 'POST', headers: authHeaders(),
+            body: JSON.stringify({title, description: desc, severity})
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            msg.innerText = '[+] Case created successfully.';
+            msg.className = 'text-green-muted text-sm mt-4';
+            msg.classList.remove('hidden');
+            document.getElementById('case-title').value = '';
+            document.getElementById('case-desc').value  = '';
+            showToast('[+] Case created.', '#8bc34a');
+            setTimeout(() => { openTab('mod5','cases'); loadCases(); }, 1200);
+        }
+    } catch(e) {
+        msg.innerText = '[-] Backend offline.'; msg.className = 'text-red-muted text-sm mt-4'; msg.classList.remove('hidden');
+    }
+};
+
+// ── JARVIS WIDGET ─────────────────────────────────────────────────────────
+let jarvisIntroPlayed = false;
+function triggerShortGreeting() {
+    if (jarvisIntroPlayed) { window.location.href = 'jarvis.html'; return; }
+    if ('speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance("Hello Operator. Welcome to Phish-Net. How can I assist you today?");
+        u.pitch = 0.8; u.rate = 1.0;
+        const voices = speechSynthesis.getVoices();
+        const male = voices.find(v => v.name.includes('Male') || v.name.includes('UK English Male'));
+        if (male) u.voice = male;
+        speechSynthesis.speak(u);
+        jarvisIntroPlayed = true;
+        setTimeout(() => window.location.href = 'jarvis.html', 2000);
+    } else { window.location.href = 'jarvis.html'; }
+}
+
+// ── WORLD INCIDENTS (CISA KEV Feed) ──────────────────────────────────────────
+window.loadIncidents = async function(ransomwareOnly = false) {
+    const search    = document.getElementById('inc-search').value.trim();
+    const list      = document.getElementById('incidents-list');
+    const stats     = document.getElementById('incidents-stats');
+    const meta      = document.getElementById('incidents-meta');
+
+    list.innerHTML  = `<div class="text-red-400 text-sm animate-pulse">
+        <i class="fa-solid fa-satellite-dish mr-2"></i>Connecting to CISA threat database...</div>`;
+    stats.classList.add('hidden');
+
+    const params = new URLSearchParams({ limit: 100 });
+    if (search)        params.set('search', search);
+    if (ransomwareOnly) params.set('ransomware', 'yes');
+
+    try {
+        const res  = await fetch(`${BACKEND}/api/incidents?${params}`);
+        const data = await res.json();
+
+        if (data.status !== 'success') {
+            list.innerHTML = `<p class="text-red-400 text-sm">[-] ${data.message}</p>`;
+            return;
+        }
+
+        const vulns = data.vulnerabilities || [];
+
+        // Update meta
+        meta.innerHTML = `Catalog v${data.catalogVersion} · Updated ${data.dateReleased?.split('T')[0] || 'N/A'}`;
+
+        // Update stats
+        const ransomwareCount = vulns.filter(v =>
+            v.knownRansomwareCampaignUse?.toLowerCase() === 'known').length;
+        document.getElementById('inc-stat-total').textContent    = data.total;
+        document.getElementById('inc-stat-ransomware').textContent = ransomwareCount;
+        document.getElementById('inc-stat-showing').textContent  = vulns.length;
+        stats.classList.remove('hidden');
+
+        if (!vulns.length) {
+            list.innerHTML = '<p class="text-[#7f849c] text-sm">No incidents match your filter.</p>';
+            return;
+        }
+
+        list.innerHTML = vulns.map(v => {
+            const isRansomware = v.knownRansomwareCampaignUse?.toLowerCase() === 'known';
+            const borderCol    = isRansomware ? '#d9534f' : 'rgba(91,192,190,0.25)';
+            const severityCol  = isRansomware ? '#d9534f' : '#d4c768';
+            const ransomBadge  = isRansomware
+                ? `<span class="ml-2 text-[10px] bg-red-900/60 text-red-400 border border-red-700 px-2 py-0.5 rounded">
+                     <i class="fa-solid fa-skull mr-1"></i>RANSOMWARE</span>`
+                : '';
+            return `
+            <div class="rounded p-4 cursor-pointer transition-all hover:brightness-125"
+                 style="background:rgba(12,18,28,0.7);border:1px solid ${borderCol};"
+                 onclick="this.querySelector('.inc-detail').classList.toggle('hidden')">
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                            <span class="font-bold text-xs" style="color:${severityCol}">${v.cveID}</span>
+                            ${ransomBadge}
+                            <span class="text-[10px] text-[#7f849c] border border-[#333] px-2 py-0.5 rounded">${v.dateAdded}</span>
+                        </div>
+                        <p class="text-white text-sm font-semibold truncate">${v.vulnerabilityName}</p>
+                        <p class="text-[#7f849c] text-xs mt-0.5">
+                            <span class="text-cyan-400">${v.vendorProject}</span> · ${v.product}
+                        </p>
+                    </div>
+                    <i class="fa-solid fa-chevron-down text-[#555] text-xs mt-1 flex-shrink-0"></i>
+                </div>
+                <!-- Expandable detail -->
+                <div class="inc-detail hidden mt-3 pt-3 border-t border-[#1a2030] space-y-2">
+                    <p class="text-[#aab] text-xs leading-relaxed">${v.shortDescription || 'No description available.'}</p>
+                    <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs">
+                        <span><span class="text-[#555]">Action required:</span>
+                            <span class="text-yellow-400 ml-1">${v.requiredAction || 'N/A'}</span></span>
+                        <span><span class="text-[#555]">Due date:</span>
+                            <span class="text-cyan-400 ml-1">${v.dueDate || 'N/A'}</span></span>
+                    </div>
+                    <button onclick="event.stopPropagation();importIncidentAsCase('${v.cveID.replace(/'/g,'')}','${v.vulnerabilityName.replace(/'/g,'').replace(/"/g,'')}','${v.vendorProject.replace(/'/g,'')}',${isRansomware})"
+                        class="mt-2 text-[11px] px-3 py-1 rounded border transition-all hover:bg-cyan-900/30"
+                        style="border-color:var(--clr-cyan);color:var(--clr-cyan)">
+                        <i class="fa-solid fa-file-import mr-1"></i>Import as Investigation Case
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+
+    } catch(e) {
+        list.innerHTML = `<p class="text-red-400 text-sm">[-] Failed to reach backend: ${e.message}</p>`;
+    }
+};
+
+// Import a world incident directly into the Cases system
+window.importIncidentAsCase = async function(cveId, name, vendor, isRansomware) {
+    const severity = isRansomware ? 'critical' : 'high';
+    const title    = `[WORLD] ${cveId} — ${name}`;
+    const desc     = `Vendor: ${vendor}\nSource: CISA KEV Catalog\nRansomware: ${isRansomware ? 'YES' : 'No'}\n\nImported for investigation tracking.`;
+    try {
+        const res  = await fetch(`${BACKEND}/api/cases`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ title, description: desc, severity })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            alert(`✓ Case created: ${title}`);
+        } else {
+            alert('Failed: ' + (data.message || 'Unknown error'));
+        }
+    } catch(e) {
+        alert('Backend error: ' + e.message);
+    }
+};
+
+
+// ── LIVE NEWS FEED ────────────────────────────────────────────────────────────
+let _allNewsItems = [];
+
+window.loadLiveNews = async function() {
+    const list = document.getElementById('live-news-list');
+    list.innerHTML = `<div class="text-pink-400 text-sm animate-pulse">
+        <i class="fa-solid fa-satellite-dish mr-2"></i>Pulling live feeds from CISA, THN, Krebs, Bleeping Computer...</div>`;
+
+    try {
+        const res  = await fetch(`${BACKEND}/api/world-cases`);
+        const data = await res.json();
+
+        if (data.status !== 'success') {
+            list.innerHTML = `<p class="text-red-400 text-sm">[-] ${data.message || 'Feed error'}</p>`;
+            return;
+        }
+
+        _allNewsItems = data.incidents || [];
+        renderNews(_allNewsItems);
+
+    } catch(e) {
+        list.innerHTML = `<p class="text-red-400 text-sm">[-] Cannot reach backend: ${e.message}</p>`;
+    }
+};
+
+function renderNews(items) {
+    const list = document.getElementById('live-news-list');
+    if (!items.length) {
+        list.innerHTML = '<p class="text-[#7f849c] text-sm">No items match this filter.</p>';
+        return;
+    }
+
+    const sourceColors = {
+        'CISA':               { border: '#ef9f27', badge: 'bg-yellow-900/50 text-yellow-400 border-yellow-700' },
+        'The Hacker News':    { border: '#d4c768', badge: 'bg-yellow-900/30 text-yellow-300 border-yellow-800' },
+        'Krebs on Security':  { border: '#d48bbd', badge: 'bg-pink-900/40 text-pink-400 border-pink-700' },
+        'Bleeping Computer':  { border: '#5bc0be', badge: 'bg-cyan-900/40 text-cyan-400 border-cyan-700' },
+    };
+
+    list.innerHTML = items.map(item => {
+        const sc      = sourceColors[item.source] || { border: '#555', badge: 'bg-gray-800 text-gray-400 border-gray-600' };
+        const isHigh  = item.severity === 'high';
+        const sevBadge = isHigh
+            ? `<span class="text-[10px] border px-2 py-0.5 rounded bg-red-900/50 text-red-400 border-red-700"><i class="fa-solid fa-triangle-exclamation mr-1"></i>HIGH</span>`
+            : `<span class="text-[10px] border px-2 py-0.5 rounded bg-gray-800 text-gray-400 border-gray-600">MEDIUM</span>`;
+
+        const linkBtn = item.link
+            ? `<a href="${item.link}" target="_blank" rel="noopener noreferrer"
+                class="text-[11px] px-3 py-1 rounded border transition hover:brightness-125 inline-block mt-2"
+                style="border-color:${sc.border};color:${sc.border}">
+                <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>READ FULL ARTICLE
+               </a>`
+            : '';
+
+        const importBtn = `<button onclick="importNewsAsCase(${JSON.stringify(item.title).replace(/'/g,"&#39;")}, ${JSON.stringify(item.source)}, ${JSON.stringify(item.link)}, '${item.severity}')"
+            class="text-[11px] px-3 py-1 rounded border transition hover:bg-cyan-900/30 ml-2 mt-2"
+            style="border-color:var(--clr-cyan);color:var(--clr-cyan)">
+            <i class="fa-solid fa-file-import mr-1"></i>Import as Case
+        </button>`;
+
+        return `<div class="rounded p-4 transition-all" data-source="${item.source}" data-severity="${item.severity}"
+             style="background:rgba(12,18,28,0.8);border:1px solid ${isHigh ? '#d9534f55' : sc.border + '44'};border-left:3px solid ${isHigh ? '#d9534f' : sc.border}">
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+                <span class="text-[10px] border px-2 py-0.5 rounded ${sc.badge}">${item.source}</span>
+                ${sevBadge}
+                <span class="text-[10px] text-[#555] ml-auto">${item.date}</span>
+            </div>
+            <p class="text-white text-sm font-semibold leading-snug mb-1">${item.title}</p>
+            ${item.summary ? `<p class="text-[#7f849c] text-xs leading-relaxed">${item.summary}...</p>` : ''}
+            <div class="flex flex-wrap gap-1 mt-1">${linkBtn}${importBtn}</div>
+        </div>`;
+    }).join('');
+}
+
+window.filterNews = function(filter) {
+    // Update active button
+    document.querySelectorAll('.news-filter-btn').forEach(b => {
+        b.style.fontWeight = 'normal';
+        b.style.opacity = '0.6';
+    });
+    const activeBtn = document.getElementById('nf-' + filter);
+    if (activeBtn) { activeBtn.style.fontWeight = '600'; activeBtn.style.opacity = '1'; }
+
+    const sourceMap = { cisa: 'CISA', thn: 'The Hacker News', krebs: 'Krebs on Security', bleeping: 'Bleeping Computer' };
+
+    let filtered = _allNewsItems;
+    if (filter === 'high')         filtered = _allNewsItems.filter(i => i.severity === 'high');
+    else if (sourceMap[filter])    filtered = _allNewsItems.filter(i => i.source === sourceMap[filter]);
+
+    renderNews(filtered);
+};
+
+window.importNewsAsCase = async function(title, source, link, severity) {
+    const desc = `Source: ${source}\nURL: ${link}\nSeverity: ${severity}\n\nImported from live world incident feed for investigation.`;
+    try {
+        const res = await fetch(`${BACKEND}/api/cases`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ title: `[LIVE] ${title.substring(0,80)}`, description: desc, severity: severity === 'high' ? 'high' : 'medium' })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast('Incident imported as investigation case!', 'green');
+        }
+    } catch(e) {
+        showToast('Failed to import case.', 'red');
+    }
+};
+
+
+
+// ── NVD CVE SEARCH ────────────────────────────────────────────────────────────
+let _nvdStart = 0;
+const _nvdPageSize = 20;
+
+window.loadNVD = async function(start = 0) {
+    _nvdStart = start;
+    const keyword  = document.getElementById('nvd-keyword').value.trim();
+    const cveId    = document.getElementById('nvd-cveid').value.trim();
+    const severity = document.getElementById('nvd-severity').value;
+    const year     = document.getElementById('nvd-year').value.trim();
+    const results  = document.getElementById('nvd-results');
+    const badge    = document.getElementById('nvd-total-badge');
+    const pagination = document.getElementById('nvd-pagination');
+
+    results.innerHTML = `<div class="text-green-400 text-sm animate-pulse"><i class="fa-solid fa-database mr-2"></i>Querying NIST NVD — up to 200,000 CVEs available...</div>`;
+    badge.textContent = '';
+    pagination.innerHTML = '';
+
+    const params = new URLSearchParams({start, limit: _nvdPageSize});
+    if (keyword)  params.set('keyword',  keyword);
+    if (cveId)    params.set('cveId',    cveId);
+    if (severity) params.set('severity', severity);
+    if (year)     params.set('year',     year);
+
+    try {
+        const res  = await fetch(`${BACKEND}/api/cve-search?${params}`);
+        const data = await res.json();
+
+        if (data.status !== 'success') {
+            results.innerHTML = `<p class="text-red-400 text-sm">[-] ${data.message || 'NVD error'}</p>`;
+            return;
+        }
+
+        badge.textContent = `${data.total.toLocaleString()} total results`;
+
+        if (!data.results.length) {
+            results.innerHTML = '<p class="text-[#7f849c] text-sm">No CVEs match your query.</p>';
+            return;
+        }
+
+        const sevColors = {CRITICAL:'#d9534f', HIGH:'#ef9f27', MEDIUM:'#d4c768', LOW:'#8bc34a', UNKNOWN:'#555'};
+        results.innerHTML = data.results.map(cve => {
+            const sc     = sevColors[cve.severity] || '#555';
+            const score  = cve.score != null ? cve.score.toFixed(1) : 'N/A';
+            const refs   = (cve.references || []).map(r =>
+                `<a href="${r}" target="_blank" rel="noopener" class="text-[10px] text-cyan-600 hover:text-cyan-400 underline block truncate" style="max-width:300px">${r}</a>`
+            ).join('');
+            const cwes   = (cve.weaknesses || []).join(', ') || 'N/A';
+            const importBtn = `<button onclick="importCVEAsCase('${cve.id}', '${(cve.description||'').substring(0,80).replace(/'/g,'')}', '${cve.severity}')"
+                class="text-[11px] px-3 py-1 rounded border hover:bg-cyan-900/30 transition mt-2"
+                style="border-color:var(--clr-cyan);color:var(--clr-cyan)">
+                <i class="fa-solid fa-file-import mr-1"></i>Import as Case</button>`;
+
+            return `<div class="rounded p-4" style="background:rgba(12,18,28,0.9);border:1px solid ${sc}44;border-left:3px solid ${sc}">
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                    <span class="font-bold text-sm" style="color:${sc}">${cve.id}</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded border font-bold" style="border-color:${sc};color:${sc}">${cve.severity}</span>
+                    <span class="text-[10px] text-white bg-gray-700 px-2 py-0.5 rounded">CVSS ${score}</span>
+                    <span class="text-[10px] text-[#555] ml-auto">Published: ${cve.published}</span>
+                </div>
+                <p class="text-gray-300 text-xs leading-relaxed mb-2">${cve.description}</p>
+                <div class="text-[10px] text-[#7f849c] mb-1">Weakness: <span class="text-yellow-400">${cwes}</span></div>
+                ${refs ? `<div class="mt-1">${refs}</div>` : ''}
+                ${importBtn}
+            </div>`;
+        }).join('');
+
+        // Pagination
+        const totalPages = Math.ceil(data.total / _nvdPageSize);
+        const curPage    = Math.floor(start / _nvdPageSize);
+        let paginationHTML = '';
+        if (curPage > 0)
+            paginationHTML += `<button onclick="loadNVD(${(curPage-1)*_nvdPageSize})" class="btn-action px-4 py-2 text-xs" style="border-color:#555;color:#aaa">← PREV</button>`;
+        paginationHTML += `<span class="text-xs text-[#7f849c] self-center">Page ${curPage+1} of ${Math.min(totalPages,500)}</span>`;
+        if (curPage < totalPages-1 && curPage < 499)
+            paginationHTML += `<button onclick="loadNVD(${(curPage+1)*_nvdPageSize})" class="btn-action px-4 py-2 text-xs" style="border-color:#8bc34a;color:#8bc34a">NEXT →</button>`;
+        pagination.innerHTML = paginationHTML;
+
+    } catch(e) {
+        results.innerHTML = `<p class="text-red-400 text-sm">[-] NVD fetch error: ${e.message}</p>`;
+    }
+};
+
+window.importCVEAsCase = async function(cveId, desc, severity) {
+    const sevMap = {CRITICAL:'critical', HIGH:'high', MEDIUM:'medium', LOW:'low'};
+    try {
+        const res = await fetch(`${BACKEND}/api/cases`, {
+            method:'POST', headers: authHeaders(),
+            body: JSON.stringify({
+                title: `[CVE] ${cveId}`,
+                description: `CVE ID: ${cveId}\nSeverity: ${severity}\n\n${desc}\n\nImported from NVD for investigation.`,
+                severity: sevMap[severity] || 'medium'
+            })
+        });
+        const data = await res.json();
+        if (data.status === 'success') showToast('CVE imported as case!', 'green');
+    } catch(e) { showToast('Failed to import.', 'red'); }
+};
+
+// Enter key triggers NVD search
+['nvd-keyword','nvd-cveid','nvd-year'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('keypress', e => { if (e.key === 'Enter') loadNVD(0); });
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phish-Net — Registration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root { --clr-bg: #05080f; --clr-panel: rgba(12,18,28,0.92); --clr-cyan: #5bc0be; --clr-pink: #d48bbd; --clr-text: #cdd6f4; }
+        body { font-family: 'Share Tech Mono', monospace; background-color: var(--clr-bg); color: var(--clr-text); margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow-x: hidden; }
+        #matrix-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; }
+        .cyber-panel { background: var(--clr-panel); border: 1px solid var(--clr-pink); box-shadow: 0 0 20px rgba(212,139,189,0.1); backdrop-filter: blur(4px); border-radius: 3px; }
+        .cyber-input { background: rgba(0,0,0,0.6); border: 1px solid var(--clr-cyan); color: #fff; width: 100%; padding: 12px 15px; outline: none; transition: 0.3s; border-radius: 2px; font-family: 'Share Tech Mono', monospace; }
+        .cyber-input:focus { border-color: var(--clr-pink); box-shadow: 0 0 8px rgba(212,139,189,0.25); }
+        .btn-action { border: 1px solid var(--clr-pink); color: var(--clr-pink); background: rgba(0,0,0,0.5); text-transform: uppercase; cursor: pointer; transition: all 0.2s; border-radius: 2px; font-family: 'Share Tech Mono', monospace; letter-spacing: 0.1em; }
+        .btn-action:hover { background: rgba(212,139,189,0.15); }
+        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
+        .auth-link { color: var(--clr-cyan); text-decoration: underline; cursor: pointer; }
+        .strength-bar { height: 4px; border-radius: 2px; transition: all 0.3s; }
+    </style>
+</head>
+<body class="p-4">
+    <canvas id="matrix-bg"></canvas>
+
+    <div class="w-full max-w-md relative z-10">
+        <div class="cyber-panel p-10 text-center">
+            <i class="fa-solid fa-user-plus text-6xl mb-4 opacity-80" style="color: var(--clr-pink);"></i>
+            <h2 class="text-2xl font-bold tracking-widest mb-1" style="color: var(--clr-pink);">OPERATOR REGISTRATION</h2>
+            <p class="text-xs text-[#7f849c] mb-8 tracking-widest">SECURE DATABASE REGISTRATION</p>
+
+            <input type="email" id="signup-email" class="cyber-input mb-4" placeholder="operator@domain.com" autocomplete="email">
+            <input type="password" id="signup-pass"  class="cyber-input mb-2" placeholder="Password (min 8 chars)" autocomplete="new-password" oninput="checkStrength(this.value)">
+
+            <!-- Password strength indicator -->
+            <div class="flex gap-1 mb-4 px-1">
+                <div id="bar-1" class="strength-bar flex-1 bg-gray-800"></div>
+                <div id="bar-2" class="strength-bar flex-1 bg-gray-800"></div>
+                <div id="bar-3" class="strength-bar flex-1 bg-gray-800"></div>
+                <div id="bar-4" class="strength-bar flex-1 bg-gray-800"></div>
+            </div>
+
+            <input type="password" id="signup-conf"  class="cyber-input mb-8" placeholder="Confirm Password" autocomplete="new-password">
+
+            <button onclick="registerUser()" class="btn-action w-full py-3 mb-4" id="btn-reg">
+                CREATE ACCOUNT <i class="fa-solid fa-server ml-2"></i>
+            </button>
+            <p class="text-xs text-[#7f849c]">Already Registered? <a href="login.html" class="auth-link">Return to Login</a></p>
+
+            <div id="signup-error"   class="hidden text-red-400 text-xs mt-4 font-bold bg-red-900/20 p-3 border border-red-500 rounded"></div>
+            <div id="signup-success" class="hidden text-green-400 text-xs mt-4 font-bold bg-green-900/20 p-3 border border-green-500 rounded">REGISTRATION SUCCESSFUL. REDIRECTING...</div>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND = "";  // Flask serves frontend — use relative URLs
+
+        function checkStrength(pwd) {
+            let score = 0;
+            if (pwd.length >= 8)  score++;
+            if (pwd.length >= 12) score++;
+            if (/[A-Z]/.test(pwd) && /[0-9]/.test(pwd)) score++;
+            if (/[^a-zA-Z0-9]/.test(pwd)) score++;
+            const colors = ['', '#d9534f', '#d4c768', '#5bc0be', '#8bc34a'];
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`bar-${i}`).style.backgroundColor = i <= score ? colors[score] : '#1a2030';
+            }
+        }
+
+        async function registerUser() {
+            const email = document.getElementById('signup-email').value.trim();
+            const pass  = document.getElementById('signup-pass').value;
+            const conf  = document.getElementById('signup-conf').value;
+            const errBox = document.getElementById('signup-error');
+            const btn    = document.getElementById('btn-reg');
+
+            errBox.classList.add('hidden');
+            document.getElementById('signup-success').classList.add('hidden');
+
+            if (!email || !email.includes('@')) {
+                errBox.innerText = "Valid email required."; errBox.classList.remove('hidden'); return;
+            }
+            if (pass.length < 8) {
+                errBox.innerText = "Password must be at least 8 characters."; errBox.classList.remove('hidden'); return;
+            }
+            if (pass !== conf) {
+                errBox.innerText = "Passwords do not match."; errBox.classList.remove('hidden'); return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>PROCESSING...';
+
+            try {
+                const res  = await fetch(`${BACKEND}/api/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password: pass })
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    document.getElementById('signup-success').classList.remove('hidden');
+                    setTimeout(() => window.location.href = 'login.html', 1500);
+                } else {
+                    errBox.innerText = data.message; errBox.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.innerHTML = 'CREATE ACCOUNT <i class="fa-solid fa-server ml-2"></i>';
+                }
+            } catch (e) {
+                errBox.innerHTML = `
+  <strong>&#9888; Cannot reach backend</strong><br><br>
+  <strong>Step 1</strong> — Open a terminal in your project folder and run:<br>
+  <code style="background:#111;padding:2px 6px;border-radius:3px">python app.py</code><br><br>
+  <strong>Step 2</strong> — Then open this page at:<br>
+  <code style="background:#111;padding:2px 6px;border-radius:3px">http://127.0.0.1:5000/login.html</code><br><br>
+  <em style="color:#aaa">Do NOT open the HTML file by double-clicking it.</em>`;
+                errBox.classList.remove('hidden');
+                btn.disabled = false;
+                btn.innerHTML = 'CREATE ACCOUNT <i class="fa-solid fa-server ml-2"></i>';
+            }
+        }
+
+        document.addEventListener('keydown', e => { if (e.key === 'Enter') registerUser(); });
+
+        const canvas = document.getElementById('matrix-bg'), ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const chars = '01', fontSize = 14;
+        let cols = Math.floor(canvas.width / fontSize) + 1;
+        let ypos = Array(cols).fill(0).map(() => Math.random() * -100);
+        setInterval(() => {
+            ctx.fillStyle = 'rgba(5,8,15,0.15)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = 'rgba(139,195,74,0.25)'; ctx.font = fontSize + 'px monospace'; ctx.textAlign = 'center';
+            ypos.forEach((y,i) => {
+                ctx.fillText(chars.charAt(Math.floor(Math.random() * chars.length)), i*fontSize+(fontSize/2), y*fontSize);
+                if (y*fontSize > canvas.height && Math.random() > 0.975) ypos[i] = 0;
+                ypos[i]++;
+            });
+        }, 60);
+    </script>
+</body>
+</html>
