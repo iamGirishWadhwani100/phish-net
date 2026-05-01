@@ -9,6 +9,14 @@ Auth:     JWT 24h + bcrypt + rate limiting
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import hashlib, socket, base64, json, re as _re, ssl, html, sqlite3, os, time as _time
+
+# ── Turso / libsql ────────────────────────────────────────────────────────────
+# Falls back to local SQLite when env vars are absent (local dev).
+try:
+    import libsql_experimental as _libsql
+    _LIBSQL_OK = True
+except ImportError:
+    _LIBSQL_OK = False
 import urllib.request, urllib.error, urllib.parse
 import xml.etree.ElementTree as _ET
 from datetime import datetime, timedelta, timezone
@@ -37,11 +45,13 @@ except ImportError:
     SSL_CONTEXT.verify_mode    = ssl.CERT_NONE
 
 load_dotenv()
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
+TURSO_URL     = os.getenv("TURSO_DATABASE_URL", "")   # e.g. libsql://your-db.turso.io
+TURSO_TOKEN   = os.getenv("TURSO_AUTH_TOKEN",   "")
 app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
 
 allowed_origins = os.getenv("ALLOWED_ORIGINS",
-    "http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000").split(",")
+    "http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000,https://*.up.railway.app").split(",")
 CORS(app, origins=allowed_origins, supports_credentials=True)
 
 JWT_SECRET    = os.getenv("JWT_SECRET", "")
@@ -124,7 +134,7 @@ FAMOUS_CASES = [
 ]
 
 def init_db():
-    conn = sqlite3.connect("phishnet.db")
+    conn = get_db()
     c = conn.cursor()
     c.execute("""CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT UNIQUE NOT NULL,
@@ -155,9 +165,16 @@ def init_db():
 
 init_db()
 
+def _row_factory(cursor, row):
+    """Universal dict row factory — works with both sqlite3 and libsql."""
+    return {col[0]: val for col, val in zip(cursor.description, row)}
+
 def get_db():
-    conn = sqlite3.connect("phishnet.db")
-    conn.row_factory = sqlite3.Row
+    if TURSO_URL and TURSO_TOKEN and _LIBSQL_OK:
+        conn = _libsql.connect(TURSO_URL, auth_token=TURSO_TOKEN)
+    else:
+        conn = sqlite3.connect("phishnet.db")
+    conn.row_factory = _row_factory
     return conn
 
 def log_action(email, action, target, summary="", ip=""):
@@ -243,8 +260,10 @@ def register():
         conn.execute("INSERT INTO users(email,password_hash) VALUES(?,?)",(email,hash_password(pw)))
         conn.commit(); conn.close()
         return jsonify({"status":"success","message":"Operator registered."})
-    except sqlite3.IntegrityError:
-        return jsonify({"status":"error","message":"Email already registered."})
+    except Exception as e:
+        if "UNIQUE" in str(e).upper() or "unique" in str(e).lower():
+            return jsonify({"status":"error","message":"Email already registered."})
+        raise
 
 @app.route("/api/login", methods=["POST"])
 @rl("20 per hour")
@@ -576,7 +595,7 @@ def manage_cases():
     if request.method == "GET":
         rows = conn.execute("SELECT * FROM cases ORDER BY created_at DESC").fetchall()
         conn.close()
-        return jsonify({"status":"success","cases":[dict(r) for r in rows]})
+        return jsonify({"status":"success","cases":rows})
     data = request.json or {}
     conn.execute("INSERT INTO cases(title,description,severity,created_by) VALUES(?,?,?,?)",
                  (data.get("title","Untitled"),data.get("description",""),data.get("severity","medium"),op["sub"]))
@@ -604,7 +623,7 @@ def case_notes(case_id):
     if request.method == "GET":
         notes = conn.execute("SELECT * FROM case_notes WHERE case_id=? ORDER BY created_at",(case_id,)).fetchall()
         conn.close()
-        return jsonify({"status":"success","notes":[dict(n) for n in notes]})
+        return jsonify({"status":"success","notes":notes})
     data = request.json or {}
     note = data.get("note","").strip()
     if not note: return jsonify({"status":"error","message":"Empty note."})
@@ -618,7 +637,7 @@ def team_activity():
     conn = get_db()
     logs = conn.execute("SELECT email,action,target,result_summary,timestamp FROM audit_log ORDER BY timestamp DESC LIMIT 50").fetchall()
     conn.close()
-    return jsonify({"status":"success","activity":[dict(r) for r in logs]})
+    return jsonify({"status":"success","activity":logs})
 
 @app.route("/api/audit-log", methods=["GET"])
 @require_auth
@@ -626,7 +645,7 @@ def audit_log():
     conn = get_db()
     rows = conn.execute("SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT 200").fetchall()
     conn.close()
-    return jsonify({"status":"success","logs":[dict(r) for r in rows]})
+    return jsonify({"status":"success","logs":rows})
 
 
 # -----------------------------------------------------------------------------
